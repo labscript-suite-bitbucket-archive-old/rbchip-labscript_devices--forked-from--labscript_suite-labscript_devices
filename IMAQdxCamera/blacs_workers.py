@@ -14,8 +14,8 @@
 # Original imaqdx_camera server by dt, with modifications by rpanderson and cbillington.
 # Refactored as a BLACS worker by cbillington
 
-import nivision as nv
-from time import monotonic
+#import nivision as nv
+from time import perf_counter
 from blacs.tab_base_classes import Worker
 import threading
 import numpy as np
@@ -150,10 +150,10 @@ class IMAQdx_Camera(object):
 
 class IMAQdxCameraWorker(Worker):
     def init(self):
-        self.camera = IMAQdx_Camera(self.serial_number)
-        print("Setting attributes...")
-        self.camera.set_attributes(self.imaqdx_attributes)
-        self.camera.set_attributes(self.manual_mode_imaqdx_attributes)
+        # self.camera = IMAQdx_Camera(self.serial_number)
+        # print("Setting attributes...")
+        # self.camera.set_attributes(self.imaqdx_attributes)
+        # self.camera.set_attributes(self.manual_mode_imaqdx_attributes)
         print("Initialisation complete")
         self.images = None
         self.n_images = None
@@ -194,7 +194,7 @@ class IMAQdxCameraWorker(Worker):
     def snap(self):
         """Acquire one frame in manual mode. Send it to the parent via
         self.image_socket. Wait for a response from the parent."""
-        image = self.camera.snap()
+        image = np.random.randint(0, 256, (488, 648), dtype=np.uint16) #self.camera.snap()
         # Send the image to the GUI to display:
         metadata = dict(dtype=str(image.dtype), shape=image.shape)
         self.image_socket.send_json(metadata, zmq.SNDMORE)
@@ -206,12 +206,12 @@ class IMAQdxCameraWorker(Worker):
         """Acquire continuously in a loop, with minimum repetition interval dt"""
         while True:
             if dt is not None:
-                t = monotonic()
+                t = perf_counter()
             self.snap()
             if dt is None:
                 timeout = 0
             else:
-                timeout = t + dt - monotonic()
+                timeout = t + dt - perf_counter()
             if self.continuous_stop.wait(timeout):
                 self.continuous_stop.clear()
                 break
