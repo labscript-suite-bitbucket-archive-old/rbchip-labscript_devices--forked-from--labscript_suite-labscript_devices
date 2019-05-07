@@ -14,6 +14,7 @@
 import os
 import json
 from time import perf_counter
+import ast
 
 import labscript_utils.h5_lock
 import h5py
@@ -144,7 +145,8 @@ class IMAQdxCameraTab(DeviceTab):
         return {
             'attribute_visibility': self.attributes_dialog.comboBox.currentText(),
             'acquiring': self.acquiring,
-            'max_rate': self.ui.doubleSpinBox_maxrate.value()
+            'max_rate': self.ui.doubleSpinBox_maxrate.value(),
+            'colormap': repr(self.image.ui.histogram.gradient.saveState())
         }
 
     def restore_save_data(self, save_data):
@@ -155,6 +157,11 @@ class IMAQdxCameraTab(DeviceTab):
         if save_data.get('acquiring', False):
             # Begin acquisition
             self.on_continuous_clicked(None)
+        if 'colormap' in save_data:
+            self.image.ui.histogram.gradient.restoreState(
+                ast.literal_eval(save_data['colormap'])
+            )
+
 
     def initialise_workers(self):
         table = self.settings['connection_table']
@@ -173,6 +180,7 @@ class IMAQdxCameraTab(DeviceTab):
             'manual_mode_imaqdx_attributes': connection_table_properties[
                 'manual_mode_imaqdx_attributes'
             ],
+            'mock': connection_table_properties['mock'],
             'image_receiver_port': self.image_receiver.port,
         }
         self.create_worker(
