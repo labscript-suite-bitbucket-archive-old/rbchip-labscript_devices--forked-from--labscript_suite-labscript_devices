@@ -1,8 +1,8 @@
 #####################################################################
 #                                                                   #
-# labscript_devices/NewFocus8742.py                                 #
+# labscript_devices/NewFocusPicomotor8742.py                        #
 #                                                                   #
-# Copyright 2016, Joint Quantum Institute                           #
+# Copyright 2019, Joint Quantum Institute                           #
 #                                                                   #
 # This file is part of labscript_devices, in the labscript suite    #
 # (see http://labscriptsuite.org), and is licensed under the        #
@@ -12,6 +12,7 @@
 #####################################################################
 from __future__ import division, unicode_literals, print_function, absolute_import
 from labscript_utils import PY2, check_version
+import numpy as np
 
 if PY2:
     str = unicode
@@ -22,16 +23,14 @@ check_version('labscript', '2.5.0', '3.0.0')
 
 from labscript import StaticAnalogOut, Device, LabscriptError, set_passed_properties
 
-from .PicoMotor8742Controller import PicoMotor8742Controller
-
 class Picomotor(StaticAnalogOut):
     """ Single axis child class """
     min_pos = -2147483648
     max_pos = 2147483647
-    description = 'PicoMotorAxis'
+    description = 'Picomotor axis'
 
-class NewFocus8742(Device):
-    description = "NewFocus 8742 controller driver"
+class NewFocusPicomotor8742(Device):
+    description = "NewFocus 8742 controller labscript driver"
     allowed_children = [Picomotor]
 
     @set_passed_properties(
@@ -41,7 +40,6 @@ class NewFocus8742(Device):
                 "port",
                 "serial_number",
             ],
-            "device_properties": [],
         } 
     )
 
@@ -62,25 +60,28 @@ class NewFocus8742(Device):
 
     def generate_code(self, hdf5_file):
         data_dict = {}
-        for motor_axis in self.child_devices:
+        for i, motor_axis in enumerate(self.child_devices):
             ignore = motor_axis.get_change_times()
-            motor.make_timeseries([])
-            motor.expand_timeseries()
-            connection = list([int(s) for s in motor.connection.split() if s.isdigit()][0])
-            value = motor.raw_output[0]
-            if not motor.minval <= value <= motor.maxval:
-                # error, out of bounds
+            motor_axis.make_timeseries([])
+            motor_axis.expand_timeseries()
+            ax = motor_axis.connection
+            value = motor_axis.raw_output[0]
+            if not motor_axis.min_pos <= value <= motor_axis.max_pos:
+                # Out of bounds position
                 raise LabscriptError('%s %s has value out of bounds. \
-                    Set value: %s Allowed range: %s to %s.'%(motor.description,
-                    motor.name,str(value),motor(motor.minval),str(motor.maxval)))
-            if not connection > 0 and not connection < 5:
-                # error, invalid connection number
+                    Set value: %s Allowed range: %s to %s.'%(motor_axis.description,
+                    motor_axis.name, str(value), 
+                    motor_axis(motor_axis.min_pos),
+                    str(motor_axis.max_pos)))
+            if ax not in range(1, 5):
+                # 8742 only supports 4 axes
                 raise LabscriptError('%s %s has invalid connection number: %s'%(
-                    motor.description,motor.name,str(motor.connection)))
-            data_dict[str(motor.connection)] = value
+                    motor_axis.description, motor_axis.name, 
+                    str(motor_axis.connection)))
+            data_dict[str(motor_axis.connection)] = value
         dtypes = [(conn, int) for conn in data_dict]
         data_array = np.zeros(1, dtype=dtypes)
         for conn in data_dict:
             data_array[0][conn] = data_dict[conn]
-        grp = hdf5_file.create_group('/devices/'+self.name)
+        grp = hdf5_file.create_group('/devices/' + self.name)
         grp.create_dataset('static_values', data=data_array)

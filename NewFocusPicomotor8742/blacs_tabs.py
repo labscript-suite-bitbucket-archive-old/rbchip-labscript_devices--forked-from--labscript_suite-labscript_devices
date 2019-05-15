@@ -1,8 +1,8 @@
 #####################################################################
 #                                                                   #
-# labscript_devices/NewFocusPicoMotorController.py                  #
+# labscript_devices/NewFocusPicomotor8742.py                        #
 #                                                                   #
-# Copyright 2016, Joint Quantum Institute                           #
+# Copyright 2019, Joint Quantum Institute                           #
 #                                                                   #
 # This file is part of labscript_devices, in the labscript suite    #
 # (see http://labscriptsuite.org), and is licensed under the        #
@@ -11,21 +11,16 @@
 #                                                                   #
 #####################################################################
 
-from labscript_devices import labscript_device, BLACS_tab, BLACS_worker, runviewer_parser
-from labscript import StaticAnalogQuantity, Device, LabscriptError, set_passed_properties
-import numpy as np
-
-
-
-import time
+from __future__ import division, unicode_literals, print_function, absolute_import
+from labscript_utils import PY2
+if PY2:
+    str = unicode
+from blacs.device_base_class import DeviceTab
 
 from blacs.tab_base_classes import Worker, define_state
 from blacs.tab_base_classes import MODE_MANUAL, MODE_TRANSITION_TO_BUFFERED, MODE_TRANSITION_TO_MANUAL, MODE_BUFFERED
 
-from blacs.device_base_class import DeviceTab
-
-@BLACS_tab
-class NewFocusPicoMotorControllerTab(DeviceTab):
+class NewFocusPicomotor8742Tab(DeviceTab):
     def initialise_GUI(self):
         # Capabilities
         self.base_units = 'steps'
@@ -41,7 +36,7 @@ class NewFocusPicoMotorControllerTab(DeviceTab):
         for child_name in self.device.child_list:
             motor_type = self.device.child_list[child_name].device_class
             connection = self.device.child_list[child_name].parent_port
-            if motor_type == "NewFocus8742Motor":
+            if motor_type == 'Picomotor':
                 base_max = 2147483647
             else:
                 base_max = 2147483647
@@ -56,14 +51,13 @@ class NewFocusPicoMotorControllerTab(DeviceTab):
         # Create the output objects
         self.create_analog_outputs(ao_prop)
         # Create widgets for output objects
-        dds_widgets,ao_widgets,do_widgets = self.auto_create_widgets()
+        _, ao_widgets, _ = self.auto_create_widgets()
         # and auto place the widgets in the UI
-        self.auto_place_widgets(("Target Position",ao_widgets))
+        self.auto_place_widgets(("Position", ao_widgets))
 
         # Store the address
         self.blacs_connection = str(self.settings['connection_table'].find_by_name(self.device_name).BLACS_connection)
-        self.host, self.slave = self.blacs_connection.split(',')
-        # print(self.host.split())
+        self.host, self.port = self.blacs_connection.split(',')
 
         # Set the capabilities of this device
         self.supports_remote_value_check(True)
@@ -71,5 +65,8 @@ class NewFocusPicoMotorControllerTab(DeviceTab):
 
     def initialise_workers(self):
         # Create and set the primary worker
-        self.create_worker("main_worker",NewFocusPicoMotorControllerWorker,{'host':self.host, 'slave':self.slave})
-        self.primary_worker = "main_worker"
+        self.create_worker(
+            'main_worker', 
+            'labscript_devices.NewFocusPicomotor8742.blacs_workers.NewFocusPicomotor8742Worker', 
+            {'host':self.host, 'port':self.port})
+        self.primary_worker = 'main_worker'

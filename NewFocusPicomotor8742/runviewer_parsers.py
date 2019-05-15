@@ -1,8 +1,8 @@
 #####################################################################
 #                                                                   #
-# labscript_devices/NewFocusPicoMotorController.py                  #
+# labscript_devices/NewFocusPicoMotor8742.py                        #
 #                                                                   #
-# Copyright 2016, Joint Quantum Institute                           #
+# Copyright 201p, Joint Quantum Institute                           #
 #                                                                   #
 # This file is part of labscript_devices, in the labscript suite    #
 # (see http://labscriptsuite.org), and is licensed under the        #
@@ -15,3 +15,5 @@ from labscript_devices import labscript_device, BLACS_tab, BLACS_worker, runview
 from labscript import StaticAnalogQuantity, Device, LabscriptError, set_passed_properties
 import numpy as np
 
+class NewFocusPicoMotor8742Parser:
+    pass

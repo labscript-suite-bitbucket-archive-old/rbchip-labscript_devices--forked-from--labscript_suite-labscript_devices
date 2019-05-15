@@ -3,6 +3,7 @@
 author = '__pacosalces__'
 
 import telnetlib
+import time
 
 CR = b"\n"
 LF = b"\r"
@@ -15,7 +16,7 @@ def telnet_8742(command):
         def telnet_interface(self, **kwargs):
             try:
                 value = func(self, **kwargs)
-                #self.connect_to_telnet()
+                self.connect_to_telnet()
                 if "axis" in kwargs.keys():
                     axis = str(kwargs['axis'])
                 else:
@@ -25,12 +26,12 @@ def telnet_8742(command):
                 else:
                     value = ""
                 line = (axis + command + value).encode()
-                #self.send_to_telnet(line)
+                self.send_to_telnet(line)
                 if b"?" in line:
                     data = self.receive_from_telnet()
                 else:
                     data = None
-                #self.close_connection()
+                self.close_connection()
                 return data
             except Exception as error:
                 print(error)
@@ -41,7 +42,7 @@ def telnet_8742(command):
         return telnet_interface
     return wrapped
 
-class Picomotor8742Controller(object):
+class PicoMotor8742Controller(object):
            
     def __init__(self, host='localhost', port=23, timeout=0.005):
         self.host = host
@@ -50,14 +51,16 @@ class Picomotor8742Controller(object):
         
     def connect_to_telnet(self):
         self.tn = telnetlib.Telnet(self.host, self.port, self.timeout)
+        time.sleep(0.5)
 
     def send_to_telnet(self, line):
         self.tn.write(line + LF + CR)
+        time.sleep(0.5)
 
     def receive_from_telnet(self):
-        #response = self.tn.read_until(LF + CR)
-        fake_ = b"Hellow"
-        return fake_.decode()
+        response = self.tn.read_until(LF + CR)
+        time.sleep(1)
+        return response.decode()
 
     def close_connection(self):
         self.tn.close()
@@ -571,6 +574,5 @@ class Picomotor8742Controller(object):
 
 if __name__ == "__main__":
     dev = Picomotor8742Controller(host="169.254.187.22", port=23, timeout=0.01)
-    dev.move_axis_indefinitely(axis=5, direction="+")
-    #print(dev.query_motor_type(axis=3))
+    print(dev.query_motor_type(axis=3))
 
