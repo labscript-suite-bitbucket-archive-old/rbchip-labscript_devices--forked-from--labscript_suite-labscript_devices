@@ -7,49 +7,67 @@
     <x>0</x>
     <y>0</y>
     <width>667</width>
-    <height>462</height>
+    <height>473</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QWidget" name="horizontalLayoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>370</y>
-     <width>601</width>
-     <height>61</height>
-    </rect>
-   </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
-    <item>
-     <widget class="QPushButton" name="abort_acquisition_pushButton">
-      <property name="text">
-       <string>Abort Acquisition</string>
-      </property>
-      <property name="checkable">
-       <bool>false</bool>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="pushButton_3">
-      <property name="text">
-       <string>Cool Down</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="cool_down">
-      <property name="text">
-       <string>Shut Down</string>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QPushButton" name="pushButton_acqconfig">
+       <property name="text">
+        <string>Check acquisition</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../../Users/fns5/AppData/Local/Continuum/anaconda3/Lib/site-packages/qtutils/icons/icons.qrc">
+         <normaloff>:/qtutils/fugue/information-balloon.png</normaloff>:/qtutils/fugue/information-balloon.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_snap">
+       <property name="text">
+        <string>Snap</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../../Users/fns5/AppData/Local/Continuum/anaconda3/Lib/site-packages/qtutils/icons/icons.qrc">
+         <normaloff>:/qtutils/fugue/control-stop.png</normaloff>:/qtutils/fugue/control-stop.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_cooldown">
+       <property name="text">
+        <string>Cooldown</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../../Users/fns5/AppData/Local/Continuum/anaconda3/Lib/site-packages/qtutils/icons/icons.qrc">
+         <normaloff>:/qtutils/fugue/thermometer-low.png</normaloff>:/qtutils/fugue/thermometer-low.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+  </layout>
  </widget>
- <resources/>
+ <resources>
+  <include location="../../../Users/fns5/AppData/Local/Continuum/anaconda3/Lib/site-packages/qtutils/icons/icons.qrc"/>
+ </resources>
  <connections/>
 </ui>
