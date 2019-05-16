@@ -3,7 +3,6 @@
 # __author__ = pacosalces
 #   "I'm not a wrapper"
 #
-from __future__ import division, print_function
 import os
 import sys
 import platform
@@ -20,20 +19,20 @@ PYTHON = sys.version_info
 at_32 = ctypes.c_long
 at_64 = ctypes.c_uint64
 
-# Load proprietary DLL, start with defining current dir
+# Load proprietary DLL, start with current dir
 current_dir = os.path.abspath(os.path.realpath(os.path.dirname(__name__)))
 try:
     if 'Windows' in platform.system(): 
-        # dll_dir may be custom, usually found here -->
+        # Usually found here
         dll_dir = r'C:\Program Files\Andor SOLIS\Drivers'
-
-        # Is that right?
-        assert os.path.exists(dll_dir), 'Path does not seem to exist'
+        # Usual dir exists?
+        if os.path.exists(dll_dir):
+            raise OSError('Path does not exist, please set dll path')
     else:
         raise OSError("OS not supported, sorry M8")
     
 except OSError:
-    # Just use current one and move on
+    # Use current one
     dll_dir = current_dir
 
 finally:
@@ -55,7 +54,8 @@ def check_status(call_return):
         pass
 
     try:
-        assert call_return in _SC.keys(), 'Unknown error, maybe fatal (lol, just kidding)'
+        if not call_return in _SC.keys():
+            raise KeyError('Unknown error call, may be fatal (lol, just kidding)')
         if 'DRV_SUCCESS' in _SC[call_return]:
             pass
         else:
