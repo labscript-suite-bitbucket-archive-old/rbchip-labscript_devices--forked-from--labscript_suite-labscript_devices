@@ -16,6 +16,11 @@ class AndorCam(object):
         self.name = name
         self.model = model
         self.initialize_camera()
+        self.check_capabilities()
+        self.cooling = False
+        self.preamp = False
+        self.emccd = False
+        self.armed = False
 
     def initialize_camera(self):
         """ This method calls the initialization function and
@@ -41,7 +46,6 @@ class AndorCam(object):
         self.emccd_gain_range = GetEMGainRange()
         self.preamp_gain_range = list([GetPreAmpGain(gain_index) for 
             gain_index in range(GetNumberPreAmpGains())])
-        self.armed = False
 
     def check_capabilities(self):
         # TODO: Here we do checks based on the _AC dict,
@@ -79,6 +83,11 @@ class AndorCam(object):
             time.sleep(thermal_timeout)
             self.temperature, selt.temperature_status = GetTemperatureF()
 
+        self.cooling = True
+
+        # Always return to ambient temperature on Shutdown
+        SetCoolerMode(0)
+
     def enable_preampgain(self, preamp_gain=1):
         """ Calls all the functions relative to the 
         preamplifier gain control. """
@@ -91,6 +100,7 @@ class AndorCam(object):
         preamps_options = list([GetPreAmpGain(index) for index in index_preamp_gains])
         SetPreAmpGain(preamps_options.index(preamp_gain))
         self.preamp_gain = preamp_gain
+        self.preamp = True
 
     def enable_emccdgain(self, emccd_gain=120):
         """ Calls all the functions relative to the 
@@ -99,9 +109,13 @@ class AndorCam(object):
         if not emccd_gain in self.emccd_gain_range:
             raise ValueError("Invalid emccd gain value")
 
-        # Set 
+        if not self.cooling:
+            raise ValueError("Please enable the temperature control before \
+                enabling the EMCCD, this will prolong the lifetime of the sensor")
+
         SetEMCCDGain(emccd_gain)
         self.emccd_gain = GetEMCCDGain()
+        self.emccd = True
 
     def setup_vertical_shift(self, custom_option=None):
         """ Calls the functions needed to adjust the vertical
@@ -167,35 +181,87 @@ class AndorCam(object):
         
         # Check for extra call arguments (e.g for series acquisition)
         if 'kinetics' in self.acquisition_mode:
-            # This one means the acquisition expects at least than one 
+            # This one means the acquisition expects at least one 
             # exposure to be configured
             try:
-                self.n_exposures = self.kwargs['n_exposures']
-                self.series_time = self.kwargs['series_time']
-                self.xbin = self.kwargs['xbin']
-                self.ybin = self.kwargs['ybin']
-                self.y_offset = self.kwargs['v_offset']
+                self.n_exposures = kwargs['n_exposures']
+                self.series_time = kwargs['series_time']
+                self.xbin = kwargs['xbin']
+                self.ybin = kwargs['ybin']
+                self.y_offset = kwargs['v_offset']
             except KeyError:
-                self.n_exposures = 1
+                self.n_exposures = 2
                 self.series_time = 20*ms
                 self.xbin = 1
                 self.ybin = 1
                 self.y_offset = 0
         try:    
-            self.readout_mode = self.kwargs['readout_mode']
+            self.readout_mode = kwargs['readout_mode']
+            self.int_shutter_mode = kwargs['int_shutter_mode']
+            self.ext_shutter_mode = kwargs['ext_shutter_mode']
+            self.trigger_mode = kwargs['trigger_mode']
+            self.trigger_edge = kwargs['trigger_edge']
+            self.shutter_t_open = kwargs['shutter_t_open']
+            self.shutter_t_close = kwargs['shutter_t_close']
         except KeyError:
             self.readout_mode = 'full_image'
+            self.int_shutter_mode = 'auto'
+            self.ext_shutter_mode = 'perm_open'
+            self.shutter_t_close = 0
+            self.shutter_t_open = 0
+            self.trigger_mode = 'internal'
+            self.trigger_edge = 'rising'
+
+        # Setup shutter and trigger
+        self.setup_trigger()
+        self.setup_shutter()
 
         # Configure shifting and readout
         self.setup_vertical_shift()
         self.setup_horizontal_shift()
         self.setup_readout()
 
-        # Setup shutter and trigger
-        
-
         # Arm sensor
         self.armed = True               
+
+    def setup_trigger(self):
+        """ Sets different aspects of the trigger"""
+
+        # Available modes
+        modes = {
+        'internal':0, 
+        'external':1, 
+        'external_start':6,
+        }
+
+        edge_modes = {'rising':0, 'falling':1}
+        SetTriggerMode(modes[self.trigger_mode])
+        # Specify edge if external trigger 
+        if self.trigger_mode is not 'internal':
+            SetTriggerInvert(edge_modes[self.trigger_edge])
+
+    def setup_shutter(self):
+        """ Sets different aspects of the shutter and exposure"""
+        
+        # Available modes
+        modes = {
+        'auto':0, 
+        'perm_open':1, 
+        'perm_closed':2, 
+        'open_FVB_series':4, 
+        'open_any_series':5,
+        }
+
+        shutter_outputs = {'low':0, 'high':1}
+
+        # Set shutter configuration
+        SetShutterEx(
+            shutter_outputs[self.shutter_output], 
+            shutter_modes[self.int_shutter_mode], 
+            self.shutter_t_close, 
+            self.shutter_t_open, 
+            shutter_modes[self.ext_shutter_mode],
+        )
 
     def setup_readout(self, readout_shape=None):
         """ Sets different aspects of the data readout, including 
@@ -222,19 +288,19 @@ class AndorCam(object):
         if self.readout_shape is not None:
             self.image_shape = readout_shape
     
-        # Setup image for fast kinetics mode
+        # Setup image for fast kinetics mode, compute timings
         if 'fast_kinetics' in self.acquisition_mode:
-            modes = {'FVB':0, 'full_image':4}
+            fk_modes = {'FVB':0, 'full_image':4}
     
             # Assume that fast kinetics series fills CCD maximally, 
             # and compute the number of exposed rows per exposure 
-            exposed_rows = int(self.YPIX/n_series)
+            exposed_rows = int(self.y_size/self.n_exposures)
     
             # Use the same binning as the one used to configure Image
             SetFastKineticsEx(exposed_rows,
                 self.n_exposures, 
                 self.series_time,
-                modes[self.readout_mode], 
+                fk_modes[self.readout_mode], 
                 self.xbin, 
                 self.ybin, 
                 self.y_offset)
@@ -245,52 +311,54 @@ class AndorCam(object):
         # Compute readout timing
         self.readout_time = GetReadOutTime() 
 
-    def setup_trigger(self, trigger_mode='external', trigger_edge_type='rising'):
-        # Setup triggering
-        modes = {'internal':0, 'external':1, 'external_start':6}
-        edge_modes = {'rising':0, 'falling':1}
-        SetTriggerMode(modes[trigger_mode])
-        if trigger_mode is not 'internal':
-            SetTriggerInvert(edge_modes[trigger_edge_type])
+    def snap(self):
+        """ Carries down the acquisition, if the camera is armed """
+        if not self.armed:
+            raise ValueError
+        else:
+            self.acquisition_status = GetStatus() 
+            if 'DRV_IDLE' in self.acquisition_status:
+                StartAcquisition()
+                WaitForAcquisition()
         
-
-    def setup_exposure(self, exposure_time=1*ms, internal_shutter_mode='auto', 
-                       shutter_output_ttl='low', t_open=0, t_close=0, 
-                       external_shutter_mode='perm_open'):
-        # Setup exposure
-        shutter_modes = {'auto':0, 'perm_open':1, 'perm_closed':2, 
-                         'open_FBV_series':4, 'open_any_series':5}
-        shutter_output_ttl_levels = {'low':0, 'high':1}
-        SetShutterEx(shutter_output_ttl_levels[shutter_output_ttl], shutter_modes[internal_shutter_mode], 
-                     t_close, t_open, shutter_modes[external_shutter_mode])
-        SetExposureTime(exposure_time)
-
-    def start_acquisition(self):
-        self.ACQ_STATUS = GetStatus()        
-        if 'DRV_IDLE' in self.ACQ_STATUS:
-            StartAcquisition()
-            WaitForAcquisition()
-        
-        self.ACQ_STATUS = GetStatus()
-        # TODO: Verify sensor is happy after acquisition is done?
-        self.FIRST, self.LAST = GetNumberAvailableImages()
+            self.acquisition_status = GetStatus()
+            self.number_available_images = GetNumberAvailableImages()
 
     def grab_acquisition(self):
-        return GetAcquiredData(self.DATA_SHAPE)
+        """ Download buffered acquisition, unarm sensor """
 
-    def system_close(self, keep_cooler_on=False, temp_timeout=10):
-        # Read temperature, temperature status
-        self.TEMPERATURE, self.TEMP_STATUS = GetTemperatureF()
+        # TODO: Check acquisition status, raise any exceptions
+
+        data = GetAcquiredData(self.image_shape)
+        self.armed = False
+        return data.astype(int)
+
+    def shutdown(self):
+        """ Shuts camera down, if unarmed """
+        if self.armed:
+            raise ValueError("Cannot shutdown while the camera is armed, " +
+                "please finish or abort the current acqusition before shutdown")
+        elif self.emccd or self.preamp:
+            # Default gains
+            self.enable_preampgain(preamp_gain=1)
+            self.enable_emccdgain(emccd_gain=120)
+        else:    
+            ShutDown()
         
-        # Always return to ambient temperature on Shutdown
-        SetCoolerMode(int(keep_cooler_on))
-        
-        # Manual cooler off
-        # CoolerOFF()
-        
-        # Shutdown
-        ShutDown()
-        
-    def get_sensor_temp(self):
-        return GetTemperatureF()
-        
+if __name__ in '__main__':
+    cam = AndorCam(name='brave_tester')
+
+    # Global settings should be set at least once
+    cam.enable_cooldown(temperature_setpoint=10)
+    cam.enable_preampgain(preamp_gain=2)
+    
+    # First test, no specifications, should arm default and go
+    cam.setup_acquisition()
+    cam.snap()
+    image = cam.grab_acquisition()
+
+    # Second test, some specifications, should arm, wait for ext-trig and go
+    cam.enable_emccdgain(emccd_gain=120)
+    cam.setup_acquisition('kinetics', 
+        n_exposures=3, 
+        )

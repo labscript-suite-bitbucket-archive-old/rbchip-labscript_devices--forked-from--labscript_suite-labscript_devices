@@ -1277,3 +1277,18 @@ def SetPreAmpGain(index):
         Pre Amp Gains available is found by calling the GetNumberPreAmpGains
         function. """
     return None
+
+@uint_winapi([ctypes.c_int])
+def SetNumberKinetics(number):
+    """ This function will set the number of scans (possibly accumulated scans) 
+    to be taken during a single acquisition sequence. This will only take effect 
+    if the acquisition mode is Kinetic Series."""
+    return None
+
+@uint_winapi([ctypes.c_float])
+def SetKineticCycleTime(time):
+    """ This function will set the kinetic cycle time to the nearest valid value 
+    not less than the given value. The actual time used is obtained by 
+    GetAcquisitionTimings. Please refer to SECTION 5 – ACQUISITION MODES for 
+    further information. """
+    return None
