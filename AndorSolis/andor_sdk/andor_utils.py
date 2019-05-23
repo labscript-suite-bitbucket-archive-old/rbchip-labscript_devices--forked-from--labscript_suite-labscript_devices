@@ -1,6 +1,5 @@
 import numpy as np 
 import time
-import matplotlib.pyplot as plt
 
 from andor_solis import *
 
@@ -8,10 +7,32 @@ s, ms, us, ns = 1.0, 1e-3, 1e-6, 1e-9
 
 class AndorCam(object):
     
+    default_acquisition_attrs = {
+    'acquisition':'single',
+    'exposure_time':1*ms,
+    'int_shutter_mode':'auto',
+    'ext_shutter_mode':'perm_open',
+    'shutter_t_open':0,
+    'shutter_t_close':0,
+    'readout':'full_image',
+    'trigger': 'internal',
+    'trigger_edge':'rising',
+    'number_accumulations':1,
+    'accumulation_period':30*ms,
+    'number_kinetics':1,
+    'kinetics_period':3*ms,
+    'xbin':1,
+    'ybin':1,
+    'v_offset':0,
+    'readout':'full_image'
+    'readout_shape':None,
+    }
+
     def __init__(self, name='andornymous', model=None):
 
-        """ Methods of this class packed the wrapped driver
-        methods in andor_solis to define convenience functions"""
+        """ Methods of this class pack the sdk functions
+        and define more convenient functions to carry out
+        an acquisition """
 
         self.name = name
         self.model = model
@@ -23,7 +44,7 @@ class AndorCam(object):
         self.armed = False
 
     def initialize_camera(self):
-        """ This method calls the initialization function and
+        """ Calls the initialization function and
         pulls several properties from the hardware side such 
         as information and capabilities, which are useful for
         future acquisition settings """
@@ -158,73 +179,126 @@ class AndorCam(object):
     def image_binning(self, xbin, ybin, xlims, ylims):
         """ Enable and setup the binning attributes, 
         xbin and ybin are the sizes, xlims and ylims are
-        tuples with the binning limits """
+        tuples with the binning ROI limits """
         SetImage(xbin, ybin, *xlims, *ylims)
 
-    def setup_acquisition(self, acquisition_mode='single', **kwargs):
+    def setup_acquisition(self, acquisition_attributes=default_acquisition_attrs):
         """ Main acquisition configuration method. Available acquisition modes are
-        below, calls the relevant methods in the appropriate order, then the 
-        camera is armed and ready for the *snap* call """
+        below. The relevant methods are called with the corresponding acquisition 
+        attributes dictionary, then the camera is armed and ready """
 
-        self.acquisition_mode = acquisition_mode
-        
+        self.acquisition_mode = acquisition_attributes['acquisition']
+
         # Available modes
         modes = {
         'single':1, 
         'accumulate':2, 
-        'kinetics':3, 
+        'kinetic_series':3, 
         'fast_kinetics':4, 
         'run_till_abort':5,
         }
 
         SetAcquisitionMode(modes[self.acquisition_mode])
-        
-        # Check for extra call arguments (e.g for series acquisition)
-        if 'kinetics' in self.acquisition_mode:
-            # This one means the acquisition expects at least one 
-            # exposure to be configured
-            try:
-                self.n_exposures = kwargs['n_exposures']
-                self.series_time = kwargs['series_time']
-                self.xbin = kwargs['xbin']
-                self.ybin = kwargs['ybin']
-                self.y_offset = kwargs['v_offset']
-            except KeyError:
-                self.n_exposures = 2
-                self.series_time = 20*ms
-                self.xbin = 1
-                self.ybin = 1
-                self.y_offset = 0
-        try:    
-            self.readout_mode = kwargs['readout_mode']
-            self.int_shutter_mode = kwargs['int_shutter_mode']
-            self.ext_shutter_mode = kwargs['ext_shutter_mode']
-            self.trigger_mode = kwargs['trigger_mode']
-            self.trigger_edge = kwargs['trigger_edge']
-            self.shutter_t_open = kwargs['shutter_t_open']
-            self.shutter_t_close = kwargs['shutter_t_close']
-        except KeyError:
-            self.readout_mode = 'full_image'
-            self.int_shutter_mode = 'auto'
-            self.ext_shutter_mode = 'perm_open'
-            self.shutter_t_close = 0
-            self.shutter_t_open = 0
-            self.trigger_mode = 'internal'
-            self.trigger_edge = 'rising'
+
+        # Set exposure time, note that this may be overriden 
+        # by the readout, trigger or shutter timings thereafter
+        if 'exposure_time' in attrs.keys():
+            SetExposureTime(attrs['exposure_time'])
+
+        if 'accumulate' in self.acquisition_mode:
+            self.configure_accumulate(**acquisition_attributes)
+        elif 'kinetic_series' in self.acquisition_mode:
+            self.configure_kinetic_series(**acquisition_attributes)
+        elif 'fast_kinetics' in self.acquisition_mode:
+            self.configure_fast_kinetics(**acquisition_attributes)
+        elif 'run_till_abort' in self.acquisition_mode:
+            self.configure_run_till_abort(**acquisition_attributes)
 
         # Setup shutter and trigger
-        self.setup_trigger()
-        self.setup_shutter()
+        self.setup_trigger(**acquisition_attributes)
+        self.setup_shutter(**acquisition_attributes)
 
         # Configure shifting and readout
         self.setup_vertical_shift()
         self.setup_horizontal_shift()
-        self.setup_readout()
+        self.setup_readout(**acquisition_attributes)
 
         # Arm sensor
-        self.armed = True               
+        self.armed = True
 
-    def setup_trigger(self):
+        # Get actual timing information
+        self.exposure_time, self.accumulations, self.kinetics = GetAcquisitionTimings()
+    
+        if 'fast_kinetics' in self.acquisition_mode:
+            self.exposure_time = GetFKExposureTime()   
+
+        self.readout_time = GetReadOutTime()
+       
+    def configure_accumulate(self, **attrs):
+        """ Takes a sequence of single scans and adds them together """
+        
+        SetNumberAccumulations(attrs['number_accumulations'])
+        
+        # In External Trigger mode the delay between each scan making up 
+        # the acquisition is not under the control of the Andor system but 
+        # is synchronized to an externally generated trigger pulse.
+        if 'internal' in attrs['trigger']:
+            SetAccumulationCycleTime(attrs['accumulation_period'])
+
+
+    def configure_kinetic_series(self, **attrs):
+        """ Captures a sequence of single scans, or possibly, depending on 
+        the camera, a sequence of accumulated scans """
+
+        if 'number_accumulations' in attrs.keys():
+            SetNumberAccumulations(attrs['number_accumulations'])
+
+        # In External Trigger mode the delay between each scan making up 
+        # the acquisition is not under the control of the Andor system but 
+        # is synchronized to an externally generated trigger pulse.
+        if 'internal' in attrs['trigger'] and attrs['number_accumulations'] > 1:
+            SetAccumulationCycleTime(attrs['accumulation_period'])
+
+        SetNumberKinetics(attrs['number_kinetics'])
+
+        if 'internal' in attrs['trigger'] and attrs['number_kinetics'] > 1:
+            SetKineticCycleTime(attrs['kinetics_period'])
+
+    def configure_fast_kinetics(self, **attrs):
+        """ Special readout mode that uses the actual sensor as a temporary 
+        storage medium and allows an extremely fast sequence of images to be 
+        captured """
+
+        fk_modes = {
+        'FVB':0, 
+        'full_image':4,
+        }
+    
+        if 'exposed_rows' not in attrs.keys():
+            # Assume that fast kinetics series fills CCD maximally, 
+            # and compute the number of exposed rows per exposure 
+            exposed_rows = int(self.y_size/attrs['number_kinetics'])
+        else:
+            exposed_rows = attrs['exposed_rows']
+
+        SetFastKineticsEx(
+            exposed_rows,
+            attrs['number_kinetics'], 
+            attrs['exposure_time'],
+            fk_modes[attrs['readout']], 
+            attrs['xbin'], 
+            attrs['ybin'], 
+            attrs['v_offset'],
+        )
+
+    def configure_run_till_abort(self, **attrs):
+        """ Continually performs scans of the CCD until aborted """
+        if 'internal' in attrs['trigger']: 
+            SetKineticCycleTime(0)
+        else:
+            raise Exception("Can't run_till_abort mode if external trigger")
+
+    def setup_trigger(self, **attrs):
         """ Sets different aspects of the trigger"""
 
         # Available modes
@@ -234,13 +308,18 @@ class AndorCam(object):
         'external_start':6,
         }
 
-        edge_modes = {'rising':0, 'falling':1}
-        SetTriggerMode(modes[self.trigger_mode])
-        # Specify edge if external trigger 
-        if self.trigger_mode is not 'internal':
-            SetTriggerInvert(edge_modes[self.trigger_edge])
+        edge_modes = {
+        'rising':0, 
+        'falling':1,
+        }
 
-    def setup_shutter(self):
+        SetTriggerMode(modes[attrs['trigger']])
+
+        # Specify edge if external trigger
+        if 'external' in attrs['trigger']:
+            SetTriggerInvert(edge_modes[attrs['trigger_edge']])
+
+    def setup_shutter(self, **attrs):
         """ Sets different aspects of the shutter and exposure"""
         
         # Available modes
@@ -252,18 +331,20 @@ class AndorCam(object):
         'open_any_series':5,
         }
 
-        shutter_outputs = {'low':0, 'high':1}
+        shutter_outputs = {
+        'low':0, 
+        'high':1,
+        }
 
-        # Set shutter configuration
         SetShutterEx(
-            shutter_outputs[self.shutter_output], 
-            shutter_modes[self.int_shutter_mode], 
-            self.shutter_t_close, 
-            self.shutter_t_open, 
-            shutter_modes[self.ext_shutter_mode],
+            shutter_outputs[attrs['shutter_output']], 
+            modes[attrs['int_shutter_mode']], 
+            attrs['shutter_t_close'], 
+            attrs['shutter_t_open'], 
+            modes[attrs['ext_shutter_mode']],
         )
 
-    def setup_readout(self, readout_shape=None):
+    def setup_readout(self, **attrs):
         """ Sets different aspects of the data readout, including 
         image shape, readout mode """
 
@@ -276,45 +357,22 @@ class AndorCam(object):
         'full_image':4,
         }
 
-        SetReadMode(modes[self.readout_mode])
+        SetReadMode(modes[attrs['readout']])
     
         # For full vertical binning setup a 1d-array shape
-        if 'FVB' in self.readout_mode:
+        if 'FVB' in attrs['readout']:
             self.image_shape = (self.x_pixel_size, 1)
         else: 
             self.image_shape = (self.x_pixel_size, self.y_pixel_size)
     
         # Last chance to override image shape
-        if self.readout_shape is not None:
-            self.image_shape = readout_shape
-    
-        # Setup image for fast kinetics mode, compute timings
-        if 'fast_kinetics' in self.acquisition_mode:
-            fk_modes = {'FVB':0, 'full_image':4}
-    
-            # Assume that fast kinetics series fills CCD maximally, 
-            # and compute the number of exposed rows per exposure 
-            exposed_rows = int(self.y_size/self.n_exposures)
-    
-            # Use the same binning as the one used to configure Image
-            SetFastKineticsEx(exposed_rows,
-                self.n_exposures, 
-                self.series_time,
-                fk_modes[self.readout_mode], 
-                self.xbin, 
-                self.ybin, 
-                self.y_offset)
-            self.exposure_time = GetFKExposureTime()
-        else:
-            self.exposure_time, self.accumulations, self.kinetics = GetAcquisitionTimings()
-    
-        # Compute readout timing
-        self.readout_time = GetReadOutTime() 
+        if attrs['readout_shape'] is not None:
+            self.image_shape = attrs['readout_shape']
 
     def snap(self):
         """ Carries down the acquisition, if the camera is armed """
         if not self.armed:
-            raise ValueError
+            raise Exception("Cannot start acquisition until armed")
         else:
             self.acquisition_status = GetStatus() 
             if 'DRV_IDLE' in self.acquisition_status:
@@ -326,9 +384,6 @@ class AndorCam(object):
 
     def grab_acquisition(self):
         """ Download buffered acquisition, unarm sensor """
-
-        # TODO: Check acquisition status, raise any exceptions
-
         data = GetAcquiredData(self.image_shape)
         self.armed = False
         return data.astype(int)
@@ -357,8 +412,23 @@ if __name__ in '__main__':
     cam.snap()
     image = cam.grab_acquisition()
 
-    # Second test, some specifications, should arm, wait for ext-trig and go
+    # Second test, 3-shot kinetic series, ext trigger and 4x-binning,
+    # in x and y, similar to absorption imaging
     cam.enable_emccdgain(emccd_gain=120)
-    cam.setup_acquisition('kinetics', 
-        n_exposures=3, 
-        )
+    external_trig_attrs = {
+    'trigger':'external',
+    'acquisition':'kinetic_series',
+    'number_kinetics':3,
+    'trigger_edge':'falling',
+    'xbin':4,
+    'ybin':4,
+    'readout':'full_image',
+    'exposure_time':50*us,
+    'int_shutter_mode':'auto',
+    'ext_shutter_mode':'perm_open',
+    'shutter_t_open':0,
+    'shutter_t_close':0,
+    }
+    cam.setup_acquisition(external_trig_attrs)
+    cam.snap()
+    images = cam.grab_acquisition()

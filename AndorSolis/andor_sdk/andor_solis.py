@@ -57,7 +57,7 @@ def check_status(call_return):
         if not call_return in _SC.keys():
             raise KeyError('Unknown error call, may be fatal (lol, just kidding)')
         if 'DRV_SUCCESS' in _SC[call_return]:
-            pass
+            continue
         else:
             raw_message = "Return code: %d ... %s" %(call_return, _SC[call_return])
             raise AndorException
@@ -1292,3 +1292,18 @@ def SetKineticCycleTime(time):
     GetAcquisitionTimings. Please refer to SECTION 5 – ACQUISITION MODES for 
     further information. """
     return None
+
+@uint_winapi([ctypes.c_int])
+def SetNumberAccumulations(number):
+    """ This function will set the number of scans accumulated in memory. This
+    will only take effect if the acquisition mode is either Accumulate or Kinetic 
+    Series. """
+    return None
+
+@uint_winapi([ctypes.c_float])
+def SetAccumulationCycleTime(time):
+    """ This function will set the accumulation cycle time to the nearest valid 
+    value not less than the given value. The actual cycle time used is obtained 
+    by GetAcquisitionTimings."""
+    return None
+
