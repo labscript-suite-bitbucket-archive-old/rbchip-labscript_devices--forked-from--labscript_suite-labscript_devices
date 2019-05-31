@@ -1,8 +1,8 @@
 #####################################################################
 #                                                                   #
-# /NI_USB_6343.py                                                   #
+# /labscript_devices/IMAQdxCamera/register_classes.py               #
 #                                                                   #
-# Copyright 2013, Monash University                                 #
+# Copyright 2019, Monash University and contributors                #
 #                                                                   #
 # This file is part of labscript_devices, in the labscript suite    #
 # (see http://labscriptsuite.org), and is licensed under the        #
@@ -10,15 +10,10 @@
 # the project for the full license.                                 #
 #                                                                   #
 #####################################################################
-from __future__ import division, unicode_literals, print_function, absolute_import
-from labscript_utils import PY2
+from labscript_devices import register_classes
 
-if PY2:
-    str = unicode
-
-from labscript_devices import deprecated_import_alias
-
-# For backwards compatibility with old experiment scripts:
-NI_USB_6343 = deprecated_import_alias(
-    "labscript_devices.NI_DAQmx.labscript_devices.NI_USB_6343"
+register_classes(
+    'NewFocusPicomotor8742',
+    BLACS_tab='labscript_devices.NewFocusPicomotor8742.blacs_tabs.NewFocusPicomotor8742Tab',
+    runviewer_parser=None,
 )
