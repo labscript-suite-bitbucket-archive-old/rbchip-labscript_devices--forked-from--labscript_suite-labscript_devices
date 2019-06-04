@@ -2,6 +2,7 @@ import numpy as np
 import time
 
 from andor_solis import *
+from andor_capabilities import *
 
 s, ms, us, ns = 1.0, 1e-3, 1e-6, 1e-9
 
@@ -9,13 +10,18 @@ class AndorCam(object):
     
     default_acquisition_attrs = {
     'acquisition':'single',
-    'exposure_time':1*ms,
+    'emccd':False,
+    'emccd_gain':120,
+    'preamp':False,
+    'preamp_gain':1.0,
+    'exposure_time':20*ms,
+    'shutter_output':'low',
     'int_shutter_mode':'auto',
-    'ext_shutter_mode':'perm_open',
-    'shutter_t_open':0,
-    'shutter_t_close':0,
+    'ext_shutter_mode':'auto',
+    'shutter_t_open':100,
+    'shutter_t_close':100,
     'readout':'full_image',
-    'trigger': 'internal',
+    'trigger':'internal',
     'trigger_edge':'rising',
     'number_accumulations':1,
     'accumulation_period':30*ms,
@@ -23,25 +29,25 @@ class AndorCam(object):
     'kinetics_period':3*ms,
     'xbin':1,
     'ybin':1,
+    'xlims':None,
+    'ylims':None,
     'v_offset':0,
-    'readout':'full_image'
     'readout_shape':None,
     }
 
-    def __init__(self, name='andornymous', model=None):
+    def __init__(self, name='andornymous'):
 
         """ Methods of this class pack the sdk functions
         and define more convenient functions to carry out
         an acquisition """
 
         self.name = name
-        self.model = model
-        self.initialize_camera()
-        self.check_capabilities()
         self.cooling = False
         self.preamp = False
         self.emccd = False
         self.armed = False
+        
+        self.initialize_camera()
 
     def initialize_camera(self):
         """ Calls the initialization function and
@@ -50,28 +56,38 @@ class AndorCam(object):
         future acquisition settings """
         Initialize()
         
-        # Pull capabilities struct (as dict)
+        # Pull model and other capabilities struct
         self.andor_capabilities = GetCapabilities()
+        self.model = cam_type.get_type(self.andor_capabilities.ulCameraType)
+        self.check_capabilities()
 
         # Pull hardware attributes
         self.head_name = GetHeadModel()
         self.x_size, self.y_size = GetDetector()
         self.x_pixel_size, self.y_pixel_size = GetPixelSize()
+               
         self.hardware_version = GetHardwareVersion()
 
         # Pull software attributes
         self.software_version = GetSoftwareVersion()
 
-        # Pull important capabilities ranges
+        # Pull important capability ranges
         self.temperature_range = GetTemperatureRange()
         self.emccd_gain_range = GetEMGainRange()
-        self.preamp_gain_range = list([GetPreAmpGain(gain_index) for 
-            gain_index in range(GetNumberPreAmpGains())])
+        self.number_of_preamp_gains = GetNumberPreAmpGains()
+        self.preamp_gain_range = (GetPreAmpGain(0), GetPreAmpGain(self.number_of_preamp_gains-1))
 
     def check_capabilities(self):
-        # TODO: Here we do checks based on the _AC dict,
-        # maybe wait for Python 3 enum
-        pass
+        """ Do checks based on the _AC dict """
+        # Pull the hardware noted capabilities
+        self.acq_caps = acq_mode.check(self.andor_capabilities.ulAcqModes)
+        self.read_caps = read_mode.check(self.andor_capabilities.ulReadModes)
+        self.trig_capability = trig_mode.check(self.andor_capabilities.ulTriggerModes)
+        self.pixmode = pixel_mode.check(self.andor_capabilities.ulPixelMode)
+        self.setfuncs = set_functions.check(self.andor_capabilities.ulSetFunctions)
+        self.getfuncs = get_functions.check(self.andor_capabilities.ulGetFunctions)
+        self.features = features.check(self.andor_capabilities.ulFeatures)
+        self.emgain_capability = em_gain.check(self.andor_capabilities.ulEMGainCapability)
 
     def enable_cooldown(self, temperature_setpoint=20):
         """ Calls all the functions relative to temperature control
@@ -97,38 +113,42 @@ class AndorCam(object):
         CoolerON()
 
         # Wait until stable
-        while 'TEMPERATURE_NOT_REACHED' in self.temperature_status:
+        while 'TEMP_NOT_REACHED' in self.temperature_status:
             time.sleep(thermal_timeout)
             self.temperature, self.temperature_status = GetTemperatureF()
-        while 'TEMPERATURE_STABILIZED' not in self.temperature_status:
+        while 'TEMP_STABILIZED' not in self.temperature_status:
             time.sleep(thermal_timeout)
-            self.temperature, selt.temperature_status = GetTemperatureF()
+            self.temperature, self.temperature_status = GetTemperatureF()
 
         self.cooling = True
 
         # Always return to ambient temperature on Shutdown
         SetCoolerMode(0)
 
-    def enable_preampgain(self, preamp_gain=1):
+    def enable_preamp(self, preamp_gain):
         """ Calls all the functions relative to the 
         preamplifier gain control. """
 
-        if not preamp_gain in self.preamp_gain_range:
-            raise ValueError("Invalid preamp gain value")
+        if not preamp_gain in np.linspace(self.preamp_gain_range[0],
+                                          self.preamp_gain_range[-1],
+                                          self.number_of_preamp_gains):
+            raise ValueError(f"Invalid preamp gain value..."+
+                             f"valid range is {self.preamp_gain_range}")
 
         # Get all preamp options, match and set
-        index_preamp_gains = list(range(GetNumberPreAmpGains()))
-        preamps_options = list([GetPreAmpGain(index) for index in index_preamp_gains])
-        SetPreAmpGain(preamps_options.index(preamp_gain))
+        preamp_options = list([GetPreAmpGain(index) 
+            for index in range(self.number_of_preamp_gains)])
+        SetPreAmpGain(preamp_options.index(preamp_gain))
         self.preamp_gain = preamp_gain
         self.preamp = True
 
-    def enable_emccdgain(self, emccd_gain=120):
+    def enable_emccd(self, emccd_gain):
         """ Calls all the functions relative to the 
         emccd gain control. """
 
         if not emccd_gain in self.emccd_gain_range:
-            raise ValueError("Invalid emccd gain value")
+            raise ValueError("Invalid emccd gain value, \
+                             valid range is {self.emccd_gain_range}")
 
         if not self.cooling:
             raise ValueError("Please enable the temperature control before \
@@ -169,25 +189,24 @@ class AndorCam(object):
             for speed_index in range(n_allowed_speeds):
                 speed = GetHSSpeed(channel, 0, speed_index)
                 if speed > intermediate_speed:
-                    intermediate_speed = H_speed
+                    intermediate_speed = speed
                     self.index_hs_speed = speed_index
                     ad_number = channel
         self.hs_speed = intermediate_speed
         SetADChannel(ad_number)
         SetHSSpeed(0, self.index_hs_speed)
      
-    def image_binning(self, xbin, ybin, xlims, ylims):
-        """ Enable and setup the binning attributes, 
-        xbin and ybin are the sizes, xlims and ylims are
-        tuples with the binning ROI limits """
-        SetImage(xbin, ybin, *xlims, *ylims)
-
     def setup_acquisition(self, acquisition_attributes=default_acquisition_attrs):
         """ Main acquisition configuration method. Available acquisition modes are
         below. The relevant methods are called with the corresponding acquisition 
         attributes dictionary, then the camera is armed and ready """
 
         self.acquisition_mode = acquisition_attributes['acquisition']
+
+        if acquisition_attributes['preamp']:
+            self.enable_preamp(acquisition_attributes['preamp_gain'])
+        if acquisition_attributes['emccd']:
+            self.enable_emccd(acquisition_attributes['emccd_gain'])
 
         # Available modes
         modes = {
@@ -202,8 +221,8 @@ class AndorCam(object):
 
         # Set exposure time, note that this may be overriden 
         # by the readout, trigger or shutter timings thereafter
-        if 'exposure_time' in attrs.keys():
-            SetExposureTime(attrs['exposure_time'])
+        if 'exposure_time' in acquisition_attributes.keys():
+            SetExposureTime(acquisition_attributes['exposure_time'])
 
         if 'accumulate' in self.acquisition_mode:
             self.configure_accumulate(**acquisition_attributes)
@@ -222,10 +241,11 @@ class AndorCam(object):
         self.setup_vertical_shift()
         self.setup_horizontal_shift()
         self.setup_readout(**acquisition_attributes)
-
+        self.setup_image(**acquisition_attributes)
+   
         # Arm sensor
         self.armed = True
-
+        
         # Get actual timing information
         self.exposure_time, self.accumulations, self.kinetics = GetAcquisitionTimings()
     
@@ -336,12 +356,11 @@ class AndorCam(object):
         'high':1,
         }
 
-        SetShutterEx(
+        SetShutter(
             shutter_outputs[attrs['shutter_output']], 
             modes[attrs['int_shutter_mode']], 
-            attrs['shutter_t_close'], 
+            attrs['shutter_t_close']+int(round(attrs['exposure_time']/ms)), 
             attrs['shutter_t_open'], 
-            modes[attrs['ext_shutter_mode']],
         )
 
     def setup_readout(self, **attrs):
@@ -361,74 +380,86 @@ class AndorCam(object):
     
         # For full vertical binning setup a 1d-array shape
         if 'FVB' in attrs['readout']:
-            self.image_shape = (self.x_pixel_size, 1)
+            self.image_shape = (int(self.x_size), int(1))
         else: 
-            self.image_shape = (self.x_pixel_size, self.y_pixel_size)
+            self.image_shape = (int(self.x_size), int(self.y_size))
     
         # Last chance to override image shape
         if attrs['readout_shape'] is not None:
             self.image_shape = attrs['readout_shape']
 
-    def snap(self):
-        """ Carries down the acquisition, if the camera is armed """
+    def setup_image(self, **attrs):
+        """ Setup the binning attributes and the image attrs"""
+        
+        if attrs['xlims'] is None:
+            attrs['xlims'] = (1, self.x_size)
+        if attrs['ylims'] is None:
+            attrs['ylims'] = (1, self.y_size)
+
+        SetImage(
+            attrs['xbin'], 
+            attrs['ybin'], 
+            *attrs['xlims'],
+            *attrs['ylims'],
+        )
+
+    def snap(self, acquisition_timeout=5/ms):
+        """ Carries down the acquisition, if the camera is armed and
+        waits for an acquisition event for acquisition timeout (has to be
+        in milliseconds), default 5 seconds """
         if not self.armed:
             raise Exception("Cannot start acquisition until armed")
         else:
-            self.acquisition_status = GetStatus() 
+            self.acquisition_status = GetStatus()
             if 'DRV_IDLE' in self.acquisition_status:
                 StartAcquisition()
-                WaitForAcquisition()
-        
+                #WaitForAcquisitionTimeOut(int(round(acquisition_timeout)))
+                
             self.acquisition_status = GetStatus()
-            self.number_available_images = GetNumberAvailableImages()
+            print(self.acquisition_status)
+            #self.available_images = GetNumberAvailableImages()
+            self.armed = False
 
     def grab_acquisition(self):
         """ Download buffered acquisition, unarm sensor """
-        data = GetAcquiredData(self.image_shape)
-        self.armed = False
-        return data.astype(int)
+        return GetAcquiredData(self.image_shape)
 
     def shutdown(self):
         """ Shuts camera down, if unarmed """
         if self.armed:
             raise ValueError("Cannot shutdown while the camera is armed, " +
-                "please finish or abort the current acqusition before shutdown")
-        elif self.emccd or self.preamp:
-            # Default gains
-            self.enable_preampgain(preamp_gain=1)
-            self.enable_emccdgain(emccd_gain=120)
-        else:    
+                "please finish or abort the current acquisition before shutdown")
+        else:
             ShutDown()
         
 if __name__ in '__main__':
-    cam = AndorCam(name='brave_tester')
-
-    # Global settings should be set at least once
-    cam.enable_cooldown(temperature_setpoint=10)
-    cam.enable_preampgain(preamp_gain=2)
     
-    # First test, no specifications, should arm default and go
+    cam = AndorCam(model='iXon888u')
+
+    # First test should arm with default attrs and go
+    cam.enable_cooldown(temperature_setpoint=10)
     cam.setup_acquisition()
     cam.snap()
     image = cam.grab_acquisition()
+    
+    cam.shutdown()
+
 
     # Second test, 3-shot kinetic series, ext trigger and 4x-binning,
     # in x and y, similar to absorption imaging
-    cam.enable_emccdgain(emccd_gain=120)
-    external_trig_attrs = {
-    'trigger':'external',
-    'acquisition':'kinetic_series',
-    'number_kinetics':3,
-    'trigger_edge':'falling',
-    'xbin':4,
-    'ybin':4,
-    'readout':'full_image',
-    'exposure_time':50*us,
-    'int_shutter_mode':'auto',
-    'ext_shutter_mode':'perm_open',
-    'shutter_t_open':0,
-    'shutter_t_close':0,
-    }
-    cam.setup_acquisition(external_trig_attrs)
-    cam.snap()
-    images = cam.grab_acquisition()
+#    external_trig_attrs = {
+#    'trigger':'external',
+#    'acquisition':'kinetic_series',
+#    'number_kinetics':3,
+#    'trigger_edge':'falling',
+#    'xbin':4,
+#    'ybin':4,
+#    'readout':'full_image',
+#    'int_shutter_mode':'auto',
+#    'ext_shutter_mode':'perm_open',
+#    'shutter_t_open':0,
+#    'shutter_t_close':0,
+#    }
+#    cam.setup_acquisition(external_trig_attrs)
+#    cam.snap()
+#    images = cam.grab_acquisition()

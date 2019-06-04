@@ -10,7 +10,6 @@ import ctypes
 import numpy as np
 
 from status_codes import _SC
-from andor_capabilities import _AC
 from andor_structures import ColorDemosaicInfo, AndorCapabilities
 
 PYTHON = sys.version_info
@@ -57,7 +56,7 @@ def check_status(call_return):
         if not call_return in _SC.keys():
             raise KeyError('Unknown error call, may be fatal (lol, just kidding)')
         if 'DRV_SUCCESS' in _SC[call_return]:
-            continue
+            pass
         else:
             raw_message = "Return code: %d ... %s" %(call_return, _SC[call_return])
             raise AndorException
@@ -285,7 +284,7 @@ def GetAcquiredData16(shape):
     result =  andor_solis.GetAcquiredData16(ctypes.pointer(arr[0]), 
                                             ctypes.c_ulong(size))
     check_status(result)
-    return arr
+    return np.ctypeslib.as_array(arr)
 
 def GetAcquiredFloatData(shape):
     """ This function is reserved """ 
@@ -1307,3 +1306,19 @@ def SetAccumulationCycleTime(time):
     by GetAcquisitionTimings."""
     return None
 
+@uint_winapi([ctypes.c_int])
+def WaitForAcquisitionTimeOut(timeout_ms):
+    """WaitForAcquisitionTimeOut can be called after an acquisition is started 
+    using StartAcquisition to put the calling thread to sleep until an Acquisition 
+    Event occurs. This can be used as a simple alternative to the functionality 
+    provided by the SetDriverEvent function, as all Event creation and handling 
+    is performed internally by the SDK library. Like the SetDriverEvent 
+    functionality it will use less processor resources than continuously polling 
+    with the GetStatus function. If you wish to restart the calling thread 
+    without waiting for an Acquisition event, call the function CancelWait. An 
+    Acquisition Event occurs each time a new image is acquired during an 
+    Accumulation, Kinetic Series or Run-Till-Abort acquisition or at the end 
+    of a Single Scan Acquisition. If an Acquisition Event does not occur 
+    within _TimeOutMs milliseconds, WaitForAcquisitionTimeOut returns 
+    DRV_NO_NEW_DATA"""
+    return None
