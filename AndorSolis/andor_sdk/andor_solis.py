@@ -42,27 +42,26 @@ finally:
     libpath = os.path.join(dll_dir, libname)
     andor_solis = ctypes.cdll.LoadLibrary(libpath)
 
+class AndorException(Exception):
+        """ Base class for andor exceptions"""
+        pass
+
 def check_status(call_return):
     """ A function to query the function call status. 
         Error handling is done based on the returned 
         raw message. More info about the raw messages 
         can be found in the SDK documentation. """
     
-    class AndorException(Exception):
-        """ Base class for andor exceptions"""
+    if not call_return in _SC.keys():
+        raise KeyError('Unknown error call, may be fatal (lol, just kidding)')
+    if 'DRV_SUCCESS' in _SC[call_return]:
         pass
-
-    try:
-        if not call_return in _SC.keys():
-            raise KeyError('Unknown error call, may be fatal (lol, just kidding)')
-        if 'DRV_SUCCESS' in _SC[call_return]:
-            pass
-        else:
-            raw_message = "Return code: %d ... %s" %(call_return, _SC[call_return])
-            raise AndorException
-    except AndorException:
-        print(raw_message)
-
+    elif 'DRV_IDLE' in _SC[call_return]:
+        pass
+    else:
+        raw_message = "Return code: %d ... %s" %(call_return, _SC[call_return])
+        raise AndorException(raw_message)
+        
 
 def uint_winapi(argtypes=[]):
     """ Call decorator for *pure* input functions,
@@ -267,9 +266,9 @@ def GetAcquiredData(shape):
         (32-bit signed integers). The “array” must be large 
         enough to hold the complete data set. """ 
     andor_solis.GetAcquiredData.restype = ctypes.c_uint
-    arr = (ctypes.c_long*shape[0]*shape[1])()
-    size = shape[0]*shape[1]
-    result =  andor_solis.GetAcquiredData(ctypes.pointer(arr[0]), 
+    size = np.prod(shape).astype(int)
+    arr = (ctypes.c_int*size)()
+    result =  andor_solis.GetAcquiredData(ctypes.pointer(arr), 
                                           ctypes.c_ulong(size))
     check_status(result)
     return np.ctypeslib.as_array(arr)
@@ -279,8 +278,8 @@ def GetAcquiredData16(shape):
         The “array” must be large enough to hold the 
         complete data set. """ 
     andor_solis.GetAcquiredData16.restype = ctypes.c_uint
-    arr = (ctypes.c_int*shape[0]*shape[1])()
-    size = shape[0]*shape[1]
+    size = np.prod(shape)
+    arr = (ctypes.c_int*size)()
     result =  andor_solis.GetAcquiredData16(ctypes.pointer(arr[0]), 
                                             ctypes.c_ulong(size))
     check_status(result)
@@ -1100,8 +1099,8 @@ def GetImages(first, last, shape):
         range (i.e. the images have been overwritten or have not yet been 
         acquired then an error will be returned. """
     andor_solis.GetImages.restype = ctypes.c_uint
-    arr = (ctypes.c_long*shape[0]*shape[1]*shape[2])()
-    size = shape[0]*shape[1]*shape[2]
+    arr = (ctypes.c_long*shape[0]*shape[1])()
+    size = shape[0]*shape[1]*int(abs(last-first))
     validfirst = ctypes.c_long()
     validlast = ctypes.c_long()
     result = andor_solis.GetImages(ctypes.c_long(first), ctypes.c_long(last), 
