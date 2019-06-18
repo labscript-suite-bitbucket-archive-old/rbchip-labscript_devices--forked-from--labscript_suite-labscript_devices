@@ -9,8 +9,8 @@ import platform
 import ctypes
 import numpy as np
 
-from status_codes import _SC
-from andor_structures import ColorDemosaicInfo, AndorCapabilities
+from .status_codes import _SC
+from .andor_structures import ColorDemosaicInfo, AndorCapabilities
 
 PYTHON = sys.version_info
 
@@ -19,7 +19,7 @@ at_32 = ctypes.c_long
 at_64 = ctypes.c_uint64
 
 # Load proprietary DLL, start with current dir
-current_dir = os.path.abspath(os.path.realpath(os.path.dirname(__name__)))
+current_dir = os.path.abspath(os.path.realpath(os.path.dirname(__file__)))
 try:
     if 'Windows' in platform.system(): 
         # Usually found here

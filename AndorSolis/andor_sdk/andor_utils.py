@@ -1,8 +1,8 @@
 import numpy as np 
 import time
 
-from andor_solis import *
-from andor_capabilities import *
+from .andor_solis import *
+from .andor_capabilities import *
 
 s, ms, us, ns = 1.0, 1e-3, 1e-6, 1e-9
 

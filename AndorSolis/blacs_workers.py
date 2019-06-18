@@ -12,7 +12,7 @@
 #####################################################################
 
 from labscript_devices.IMAQdxCamera.blacs_workers import IMAQdxCameraWorker
-from andor_sdk.andor_utils import AndorCam
+from .andor_sdk.andor_utils import AndorCam
 
 class AndorSolisWorker(IMAQdxCameraWorker):
 
