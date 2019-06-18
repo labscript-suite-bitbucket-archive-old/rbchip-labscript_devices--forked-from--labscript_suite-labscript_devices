@@ -47,13 +47,13 @@ class AndorCam(object):
         'v_offset':0,
         'readout_shape':None,
         }
-        
 
     def initialize_camera(self):
         """ Calls the initialization function and
         pulls several properties from the hardware side such 
         as information and capabilities, which are useful for
         future acquisition settings """
+        print('Connecting to camera...')
         Initialize()
         
         # Pull model and other capabilities struct
