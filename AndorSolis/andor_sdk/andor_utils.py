@@ -201,16 +201,16 @@ class AndorCam(object):
         below. The relevant methods are called with the corresponding acquisition 
         attributes dictionary, then the camera is armed and ready """
         # Override default acquisition attrs with added ones
-        acquisition_attributes = self.default_acquisition_attrs
+        self.acquisition_attributes = self.default_acquisition_attrs
         for attr, val in added_attributes.items():
-            acquisition_attributes[attr] = val
+            self.acquisition_attributes[attr] = val
         
-        self.acquisition_mode = acquisition_attributes['acquisition']
+        self.acquisition_mode = self.acquisition_attributes['acquisition']
 
-        if acquisition_attributes['preamp']:
-            self.enable_preamp(acquisition_attributes['preamp_gain'])
-        if acquisition_attributes['emccd']:
-            self.enable_emccd(acquisition_attributes['emccd_gain'])
+        if self.acquisition_attributes['preamp']:
+            self.enable_preamp(self.acquisition_attributes['preamp_gain'])
+        if self.acquisition_attributes['emccd']:
+            self.enable_emccd(self.acquisition_attributes['emccd_gain'])
 
         # Available modes
         modes = {
@@ -224,30 +224,30 @@ class AndorCam(object):
         SetAcquisitionMode(modes[self.acquisition_mode])
 
         # Set readout
-        self.setup_readout(**acquisition_attributes)
+        self.setup_readout(**self.acquisition_attributes)
 
         # Add acquisition specifications
         if 'accumulate' in self.acquisition_mode:
-            self.configure_accumulate(**acquisition_attributes)
+            self.configure_accumulate(**self.acquisition_attributes)
         elif 'kinetic_series' in self.acquisition_mode:
-            self.configure_kinetic_series(**acquisition_attributes)
+            self.configure_kinetic_series(**self.acquisition_attributes)
         elif 'fast_kinetics' in self.acquisition_mode:
-            self.configure_fast_kinetics(**acquisition_attributes)
+            self.configure_fast_kinetics(**self.acquisition_attributes)
         elif 'run_till_abort' in self.acquisition_mode:
-            self.configure_run_till_abort(**acquisition_attributes)
+            self.configure_run_till_abort(**self.acquisition_attributes)
 
         # Configure shifting
         self.setup_vertical_shift()
         self.setup_horizontal_shift()
 
         # Setup shutter and trigger
-        self.setup_shutter(**acquisition_attributes)
-        self.setup_trigger(**acquisition_attributes)
+        self.setup_shutter(**self.acquisition_attributes)
+        self.setup_trigger(**self.acquisition_attributes)
 
         # Set exposure time, note that this may be overriden 
         # by the readout, trigger or shutter timings thereafter
-        if 'exposure_time' in acquisition_attributes.keys():
-            SetExposureTime(acquisition_attributes['exposure_time'])
+        if 'exposure_time' in self.acquisition_attributes.keys():
+            SetExposureTime(self.acquisition_attributes['exposure_time'])
 
         # Get actual timing information
         self.exposure_time, self.accum_timing, self.kinetics_timing = GetAcquisitionTimings()
@@ -256,7 +256,7 @@ class AndorCam(object):
             self.exposure_time = GetFKExposureTime()   
 
         # Set image (binning, cropping)
-        self.setup_image(**acquisition_attributes)
+        self.setup_image(**self.acquisition_attributes)
         
         # Arm sensor
         self.armed = True

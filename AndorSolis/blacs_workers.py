@@ -17,3 +17,19 @@ from .andor_sdk.andor_utils import AndorCam
 class AndorSolisWorker(IMAQdxCameraWorker):
 
     interface_class = AndorCam
+
+    def get_attributes(self):
+        return self.acquisition_attributes
+
+    def set_attributes(self):
+        pass
+
+    def get_attribute_names(self):
+        return self.acquisition_attributes.keys()
+
+    def get_attribute(self):
+        pass
+
+    def configure_acquisition(self):
+        pass
+
