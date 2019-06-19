@@ -450,6 +450,10 @@ class AndorCam(object):
         """ Download buffered acquisition """
         return GetAcquiredData(self.image_shape).reshape(self.image_shape)
 
+    def abort_acquisition(self):
+        """Abort"""
+        AbortAcquisition()
+
     def shutdown(self):
         """ Shuts camera down, if unarmed """
         if self.armed:
