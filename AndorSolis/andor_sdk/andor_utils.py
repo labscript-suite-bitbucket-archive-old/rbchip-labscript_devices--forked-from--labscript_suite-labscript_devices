@@ -55,6 +55,7 @@ class AndorCam(object):
         future acquisition settings """
         print('Connecting to camera...')
         Initialize()
+        self.serial_number = GetCameraSerialNumber()
         
         # Pull model and other capabilities struct
         self.andor_capabilities = GetCapabilities()
@@ -463,55 +464,55 @@ class AndorCam(object):
             ShutDown()
         
 if __name__ in '__main__':
-    
-    cam = AndorCam()
+    pass
+#     cam = AndorCam()
 
-    # First test should arm with default attrs and go
-    cam.setup_acquisition(added_attributes={'exposure_time':25*ms,})
-    cam.snap()
-    single_acq_image = cam.grab_acquisition()
-#    
-#    # Second test, 3-shot kinetic series, internal trigger,
-#    # similar to absorption imaging series
-    internal_kinetics_attrs = {
-    'exposure_time':20*ms,
-    'acquisition':'kinetic_series',
-    'number_kinetics':3,
-    'kinetics_period':20*ms,
-    'readout':'full_image',
-    'int_shutter_mode':'perm_open',
-    }
-    cam.setup_acquisition(internal_kinetics_attrs)
-    cam.snap()
-    kinetics_series_images = cam.grab_acquisition()
+#     # First test should arm with default attrs and go
+#     cam.setup_acquisition(added_attributes={'exposure_time':25*ms,})
+#     cam.snap()
+#     single_acq_image = cam.grab_acquisition()
+# #    
+# #    # Second test, 3-shot kinetic series, internal trigger,
+# #    # similar to absorption imaging series
+#     internal_kinetics_attrs = {
+#     'exposure_time':20*ms,
+#     'acquisition':'kinetic_series',
+#     'number_kinetics':3,
+#     'kinetics_period':20*ms,
+#     'readout':'full_image',
+#     'int_shutter_mode':'perm_open',
+#     }
+#     cam.setup_acquisition(internal_kinetics_attrs)
+#     cam.snap()
+#     kinetics_series_images = cam.grab_acquisition()
     
     
-    # Third test, 10-shot fast kinetics, internal trigger and no binning.
-    fast_kinetics_attrs = {
-    'exposure_time':1*ms,
-    'acquisition':'fast_kinetics',
-    'number_kinetics':16,
-    'readout_shape':(1, cam.x_size, cam.y_size),
-    'readout':'full_image',
-    'int_shutter_mode':'perm_open',
-    }
-    cam.setup_acquisition(fast_kinetics_attrs)
-    cam.snap()
-    fast_kinetics_image = cam.grab_acquisition()
+#     # Third test, 10-shot fast kinetics, internal trigger and no binning.
+#     fast_kinetics_attrs = {
+#     'exposure_time':1*ms,
+#     'acquisition':'fast_kinetics',
+#     'number_kinetics':16,
+#     'readout_shape':(1, cam.x_size, cam.y_size),
+#     'readout':'full_image',
+#     'int_shutter_mode':'perm_open',
+#     }
+#     cam.setup_acquisition(fast_kinetics_attrs)
+#     cam.snap()
+#     fast_kinetics_image = cam.grab_acquisition()
     
-    import matplotlib.pyplot as plt
-    plt.figure()
-    plt.imshow(single_acq_image[0], cmap='seismic')
+#     import matplotlib.pyplot as plt
+#     plt.figure()
+#     plt.imshow(single_acq_image[0], cmap='seismic')
     
-    plt.figure()
-    ax = plt.subplot(311)
-    ax.imshow(kinetics_series_images[0], cmap='seismic')
-    ax = plt.subplot(312)
-    ax.imshow(kinetics_series_images[1], cmap='seismic')
-    ax = plt.subplot(313)
-    ax.imshow(kinetics_series_images[2], cmap='seismic')
+#     plt.figure()
+#     ax = plt.subplot(311)
+#     ax.imshow(kinetics_series_images[0], cmap='seismic')
+#     ax = plt.subplot(312)
+#     ax.imshow(kinetics_series_images[1], cmap='seismic')
+#     ax = plt.subplot(313)
+#     ax.imshow(kinetics_series_images[2], cmap='seismic')
     
-    plt.figure()
-    plt.imshow(fast_kinetics_image[0], cmap='seismic')
+#     plt.figure()
+#     plt.imshow(fast_kinetics_image[0], cmap='seismic')
     
     

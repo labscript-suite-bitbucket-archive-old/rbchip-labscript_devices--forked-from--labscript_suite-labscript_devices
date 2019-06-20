@@ -11,7 +11,7 @@
 #                                                                   #
 #####################################################################
 
-from labscript_devices.IMAQdxCamera.blacs_workers import IMAQdxCameraWorker
+from labscript_devices.IMAQdxCamera.blacs_workers import MockCamera, IMAQdxCameraWorker
 
 class AndorCamera(object):
 
@@ -19,28 +19,26 @@ class AndorCamera(object):
         global AndorCam
         from .andor_sdk.andor_utils import AndorCam
         self.camera = AndorCam()
-        self.added_acquisition_attrs = {}
+        self.acquisition_attrs = self.camera.default_acquisition_attrs
+        print(self.acquisition_attrs)
 
     def set_attributes(self, attr_dict):
-        self.added_acquisition_attrs = attr_dict
+        self.acquisition_attrs.update(attr_dict)
 
     def set_attribute(self, name, value):
-        self.added_acquisition_attrs[name] = value
+        self.acquisition_attrs[name] = value
 
     def get_attribute_names(self, visibility_level, writeable_only=True):
-        return list(self.added_acquisition_attrs.keys())
+        return [self.acquisition_attrs.keys()]
 
     def get_attribute(self, name):
-        try: 
-            self.added_acquisition_attrs[name]
-        except NameError:
-            self.camera.default_acquisition_attrs[name]
+        return self.acquisition_attrs[name]
 
     def snap(self):
         self.camera.snap()
 
     def configure_acquisition(self, continous=True, bufferCount=3):
-        self.camera.setup_acquisition(self.added_acquisition_attrs)
+        self.camera.setup_acquisition(self.acquisition_attrs)
 
     def grab(self):
         return self.camera.grab_acquisition()
@@ -63,4 +61,11 @@ class AndorCamera(object):
 class AndorSolisWorker(IMAQdxCameraWorker):
 
     interface_class = AndorCamera
+
+    def get_camera(self):
+        """ Andor cameras may not be specified by serial numbers"""
+        if self.mock:
+            return MockCamera()
+        else:
+            return self.interface_class()
 
