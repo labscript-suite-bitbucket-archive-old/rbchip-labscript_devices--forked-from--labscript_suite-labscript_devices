@@ -19,36 +19,36 @@ class AndorCamera(object):
         global AndorCam
         from .andor_sdk.andor_utils import AndorCam
         self.camera = AndorCam()
-        self.acquisition_attrs = self.camera.default_acquisition_attrs
-        print(self.acquisition_attrs)
+        self.attributes = self.camera.default_acquisition_attrs
 
     def setup(self):
-        self.camera.setup_acquisition(self.acquisition_attrs)
+        self.camera.setup_acquisition(self.attributes)
 
     def set_attributes(self, attr_dict):
-        self.acquisition_attrs.update(attr_dict)
+        self.attributes.update(attr_dict)
         
     def set_attribute(self, name, value):
-        self.acquisition_attrs[name] = value
+        self.attributes[name] = value
 
     def get_attribute_names(self, visibility_level, writeable_only=True):
-        return list(self.acquisition_attrs.keys())
+        return list(self.attributes.keys())
 
     def get_attribute(self, name):
-        return self.acquisition_attrs[name]
+        return self.attributes[name]
 
     def snap(self):
         self.setup()
         self.camera.snap()
+        return self.camera.grab_acquisition()
 
     def configure_acquisition(self, continous=True, bufferCount=3):
         self.camera.setup_acquisition()
 
     def grab(self):
-        return self.camera.grab_acquisition()
+        return self.snap()
 
     def grab_multiple(self, n_images, images, waitForNextBuffer=True):
-        return self.grab()
+        pass
 
     def stop_acquisition(self):
         pass
@@ -76,5 +76,5 @@ class AndorSolisWorker(IMAQdxCameraWorker):
     def get_attributes_as_dict(self, visibility_level):
         """Return a dict of the attributes of the camera for the given visibility
         level"""
-        return self.camera.acquisition_attrs
+        return self.camera.attributes
 
