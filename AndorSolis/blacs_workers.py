@@ -39,7 +39,8 @@ class AndorCamera(object):
     def snap(self):
         self.setup()
         self.camera.snap()
-        return self.camera.grab_acquisition()
+        img = self.camera.grab_acquisition()
+        return img[0, :, :]
 
     def configure_acquisition(self, continous=True, bufferCount=3):
         self.camera.setup_acquisition()
