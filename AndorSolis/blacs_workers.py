@@ -21,9 +21,6 @@ class AndorCamera(object):
         self.camera = AndorCam()
         self.attributes = self.camera.default_acquisition_attrs
 
-    def setup(self):
-        self.camera.setup_acquisition(self.attributes)
-
     def set_attributes(self, attr_dict):
         self.attributes.update(attr_dict)
         
@@ -37,25 +34,31 @@ class AndorCamera(object):
         return self.attributes[name]
 
     def snap(self):
-        self.setup()
+        """Acquire a single image and return it"""
         self.camera.snap()
-        img = self.camera.grab_acquisition()
-        return img[0, :, :]
+        return self.camera.grab_acquisition()[0]
 
-    def configure_acquisition(self, continous=True, bufferCount=3):
-        self.camera.setup_acquisition()
+    def configure_acquisition(self):
+        self.camera.setup_acquisition(self.attributes)
 
     def grab(self):
-        return self.snap()
+        """ Grab last/single image """
+        img = self.camera.snap()
+        return img[0]
 
-    def grab_multiple(self, n_images, images, waitForNextBuffer=True):
-        pass
+    def grab_multiple(self, n_images):
+        """Grab n_images into images array during buffered acquistion."""
+        print(f"Attempting to grab {n_images} images.")
+        images = self.camera.snap()
+        print(f"Got {np_shape(images)[0]} of {n_images} images.")
+        return images
 
     def stop_acquisition(self):
         pass
 
     def abort_acquisition(self):
         self.camera.abort_acquisition()
+        self._abort_acquisition = True
 
     def _decode_image_data(self, img):
         pass
