@@ -179,7 +179,7 @@ def Filter_GetAveragingFactor():
 
 def Filter_GetAveragingFrameCount():
     """ Returns the current frame count value. """
-    andor_solis.ctypes.restype = ctypes.c_uint
+    andor_solis.Filter_GetAveragingFrameCount.restype = ctypes.c_uint
     frames = ctypes.c_int()
     result = andor_solis.Filter_GetAveragingFrameCount(ctypes.byref(frames))
     check_status(result)
@@ -187,7 +187,7 @@ def Filter_GetAveragingFrameCount():
 
 def Filter_GetDataAveragingMode():
     """ Returns the current averaging mode. """
-    andor_solis.ctypes.restype = ctypes.c_uint
+    andor_solis.Filter_GetDataAveragingMode.restype = ctypes.c_uint
     mode = ctypes.c_int()
     result = andor_solis.Filter_GetDataAveragingMode(ctypes.byref(mode))
     check_status(result)
@@ -195,7 +195,7 @@ def Filter_GetDataAveragingMode():
 
 def Filter_GetMode():
     """ Returns the current Noise Filter mode. """
-    andor_solis.ctypes.restype = ctypes.c_uint
+    andor_solis.Filter_GetMode.restype = ctypes.c_uint
     mode = ctypes.c_uint()
     result = andor_solis.Filter_GetMode(ctypes.byref(mode))
     check_status(result)
@@ -203,7 +203,7 @@ def Filter_GetMode():
 
 def Filter_GetThreshold():
     """ Returns the current Noise Filter threshold value. """ 
-    andor_solis.ctypes.restype = ctypes.c_uint
+    andor_solis.Filter_GetThreshold.restype = ctypes.c_uint
     threshold = ctypes.c_uint()
     result = andor_solis.Filter_GetThreshold(ctypes.byref(threshold))
     check_status(result)
@@ -404,7 +404,7 @@ def GetBaselineClamp():
         consistent across the sequence. 
             1 – Baseline Clamp Enabled
             0 – Baseline Clamp Disabled """
-    andor_solis.ctypes.restype = ctypes.c_uint
+    andor_solis.GetBaselineClamp.restype = ctypes.c_uint
     state = ctypes.c_int()
     result = andor_solis.GetBaselineClamp(ctypes.byref(state))
     check_status(result)
