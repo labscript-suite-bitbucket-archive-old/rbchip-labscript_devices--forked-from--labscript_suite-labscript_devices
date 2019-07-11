@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>667</width>
+    <height>473</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QPushButton" name="pushButton_acqconfig">
+       <property name="text">
+        <string>Check acquisition</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../../Users/fns5/AppData/Local/Continuum/anaconda3/Lib/site-packages/qtutils/icons/icons.qrc">
+         <normaloff>:/qtutils/fugue/information-balloon.png</normaloff>:/qtutils/fugue/information-balloon.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_snap">
+       <property name="text">
+        <string>Snap</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../../Users/fns5/AppData/Local/Continuum/anaconda3/Lib/site-packages/qtutils/icons/icons.qrc">
+         <normaloff>:/qtutils/fugue/control-stop.png</normaloff>:/qtutils/fugue/control-stop.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="pushButton_cooldown">
+       <property name="text">
+        <string>Cooldown</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../../../Users/fns5/AppData/Local/Continuum/anaconda3/Lib/site-packages/qtutils/icons/icons.qrc">
+         <normaloff>:/qtutils/fugue/thermometer-low.png</normaloff>:/qtutils/fugue/thermometer-low.png</iconset>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../../../Users/fns5/AppData/Local/Continuum/anaconda3/Lib/site-packages/qtutils/icons/icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>
