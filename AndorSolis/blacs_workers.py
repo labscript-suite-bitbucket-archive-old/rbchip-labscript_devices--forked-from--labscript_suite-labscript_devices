@@ -35,23 +35,32 @@ class AndorCamera(object):
 
     def snap(self):
         """Acquire a single image and return it"""
+        self.configure_acquisition()
         self.camera.snap()
-        return self.camera.grab_acquisition()[0]
+        images = self.camera.grab_acquisition()
+        return images[-1]
 
-    def configure_acquisition(self):
+    def configure_acquisition(self, continuous=False, bufferCount=None):
         self.camera.setup_acquisition(self.attributes)
 
     def grab(self):
         """ Grab last/single image """
-        img = self.camera.snap()
-        return img[0]
+        img = self.snap()
+        # Consider using run til abort acquisition mode...
+        return img
 
-    def grab_multiple(self, n_images):
+    def grab_multiple(self, n_images, images, waitForNextBuffer=True):
         """Grab n_images into images array during buffered acquistion."""
+    
+        # Catch timeout errors, check if abort, else keep trying.
+
         print(f"Attempting to grab {n_images} images.")
-        images = self.camera.snap()
-        print(f"Got {np_shape(images)[0]} of {n_images} images.")
-        return images
+        # self.configure_acquisition()
+        self.camera.snap()
+        for img in self.camera.grab_acquisition():
+            images.append(img)
+        print(f"Got {len(images)} of {n_images} images.")
+        
 
     def stop_acquisition(self):
         pass
