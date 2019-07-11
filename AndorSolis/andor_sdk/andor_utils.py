@@ -46,6 +46,7 @@ class AndorCam(object):
         'ylims':None,
         'v_offset':0,
         'readout_shape':None,
+        'acquisition_timeout': 5/ms,
         }
 
     def initialize_camera(self):
@@ -338,11 +339,14 @@ class AndorCam(object):
         'falling':1,
         }
 
+
+        # USE THE ANDOR CAPS TO RAISE BEFORE SETTING 
+
         SetTriggerMode(modes[attrs['trigger']])
 
         # Specify edge if external trigger
-        if 'external' in attrs['trigger']:
-            SetTriggerInvert(edge_modes[attrs['trigger_edge']])
+        # if 'external' in attrs['trigger']:
+        #     SetTriggerInvert(edge_modes[attrs['trigger_edge']])
 
     def setup_shutter(self, **attrs):
         """ Sets different aspects of the shutter and exposure"""
@@ -360,6 +364,8 @@ class AndorCam(object):
         'low':0, 
         'high':1,
         }
+
+        # ADD SetShutterEX support for labscript 
 
         SetShutter(
             shutter_outputs[attrs['shutter_output']], 
@@ -409,11 +415,13 @@ class AndorCam(object):
             *attrs['ylims'],
         )
 
-    def snap(self, acquisition_timeout=5/ms):
+    def snap(self):
         """ Carries down the acquisition, if the camera is armed and
         waits for an acquisition event for acquisition timeout (has to be
         in milliseconds), default to 5 seconds """
         
+        acquisition_timeout = self.acquisition_attributes['acquisition_timeout']
+
         def homemade_wait_for_acquisition():
             self.acquisition_status = GetStatus()
             start_wait = time.time()
