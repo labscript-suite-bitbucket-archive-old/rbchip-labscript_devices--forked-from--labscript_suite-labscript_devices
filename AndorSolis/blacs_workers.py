@@ -36,8 +36,9 @@ class AndorCamera(object):
     def snap(self):
         """Acquire a single image and return it"""
         self.configure_acquisition()
-        self.camera.snap()
-        images = self.camera.grab_acquisition()
+        self.camera.acquire()
+        images = self.camera.download_acquisition()
+        print(f'Actual exposure time was {self.camera.exposure_time}')
         return images[-1]
 
     def configure_acquisition(self, continuous=False, bufferCount=None):
@@ -53,14 +54,16 @@ class AndorCamera(object):
         """Grab n_images into images array during buffered acquistion."""
     
         # Catch timeout errors, check if abort, else keep trying.
-
-        print(f"Attempting to grab {n_images} images.")
-        # self.configure_acquisition()
-        self.camera.snap()
-        for img in self.camera.grab_acquisition():
-            images.append(img)
-        print(f"Got {len(images)} of {n_images} images.")
         
+        print(f"Attempting to grab {n_images} acquisition(s).")
+        for _ in range(n_images):
+            self.camera.acquire()
+            downloaded = self.camera.download_acquisition()
+            images.append(downloaded)
+            self.camera.armed = True
+        self.camera.armed = False
+        print(f"Got {len(images)} of {n_images} acquisition(s).")
+
 
     def stop_acquisition(self):
         pass
