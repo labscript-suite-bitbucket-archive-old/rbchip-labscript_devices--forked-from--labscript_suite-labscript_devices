@@ -809,6 +809,27 @@ def SetVSSpeed(index):
         Valid values: 0 to GetNumberVSSpeeds - 1""" 
     return None
 
+def GetNumberVSSpeeds():
+    """ As your Andor system may be capable of operating at more than
+    one vertical shift speed this function will return the actual number 
+    of speeds available."""
+    andor_solis.GetNumberVSSpeeds.restype = ctypes.c_uint
+    speeds = ctypes.c_int()
+    result = andor_solis.GetNumberVSSpeeds(ctypes.byref(speeds))
+    check_status(result)
+    return int(speeds.value)
+
+def GetVSSpeed(index):
+    """ As your Andor SDK system may be capable of operating at more than
+    one vertical shift speed this function will return the actual speeds 
+    available. The value returned is in microseconds. """ 
+    andor_solis.GetVSSpeed.restype = ctypes.c_uint
+    speed = ctypes.c_float()
+    result = andor_solis.GetVSSpeed(ctypes.c_int(index), 
+                                    ctypes.byref(speed))
+    check_status(result)
+    return float(speed.value)
+
 def GetNumberADChannels():
     """ As your Andor SDK system may be capable of operating with 
         more than one A-D converter, this function will tell you 
