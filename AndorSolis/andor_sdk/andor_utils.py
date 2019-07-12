@@ -160,7 +160,7 @@ class AndorCam(object):
         self.emccd_gain = GetEMCCDGain()
         self.emccd = True
 
-    def setup_vertical_shift(self, custom_option=0):
+    def setup_vertical_shift(self, custom_option=1):
         """ Calls the functions needed to adjust the vertical
         shifting speed on the sensor for a given acquisition"""
 
@@ -170,8 +170,14 @@ class AndorCam(object):
         # are used and a custom_option shifts between available
         # speeds
         if 'fast_kinetics' not in self.acquisition_mode:
-            self.index_vs_speed, self.vs_speed = GetFastestRecommendedVSSpeed()
-            SetVSSpeed(self.index_vs_speed)
+            # self.index_vs_speed, self.vs_speed = GetFastestRecommendedVSSpeed()
+            self.index_vs_speed = custom_option
+            n_available_vertical_speeds = GetNumberVSSpeeds()
+            if not custom_option in range(n_available_vertical_speeds):
+                raise ValueError("Invalida vertical shift speed custom option value")
+            else:
+                self.vs_speed = GetVSSpeed(custom_option)
+                SetVSSpeed(self.index_vs_speed)
         else:
             self.number_fkvs_speeds = GetNumberFKVShiftSpeeds()
             if not custom_option in range(self.number_fkvs_speeds):
@@ -262,8 +268,8 @@ class AndorCam(object):
         
         # Arm sensor
         self.armed = True
-        
-        self.readout_time = GetReadOutTime()
+
+        # self.readout_time = GetReadOutTime()
        
     def configure_accumulate(self, **attrs):
         """ Takes a sequence of single scans and adds them together """
@@ -339,14 +345,13 @@ class AndorCam(object):
         'falling':1,
         }
 
-
         # USE THE ANDOR CAPS TO RAISE BEFORE SETTING 
 
         SetTriggerMode(modes[attrs['trigger']])
 
         # Specify edge if external trigger
-        # if 'external' in attrs['trigger']:
-        #     SetTriggerInvert(edge_modes[attrs['trigger_edge']])
+        if 'INVERT' in self.trig_capability:
+             SetTriggerInvert(edge_modes[attrs['trigger_edge']])
 
     def setup_shutter(self, **attrs):
         """ Sets different aspects of the shutter and exposure"""
@@ -415,7 +420,7 @@ class AndorCam(object):
             *attrs['ylims'],
         )
 
-    def snap(self):
+    def acquire(self):
         """ Carries down the acquisition, if the camera is armed and
         waits for an acquisition event for acquisition timeout (has to be
         in milliseconds), default to 5 seconds """
@@ -455,7 +460,7 @@ class AndorCam(object):
                 raise AndorException('Acquisition aborted due to timeout')
 
 
-    def grab_acquisition(self):
+    def download_acquisition(self):
         """ Download buffered acquisition """
         return GetAcquiredData(self.image_shape).reshape(self.image_shape)
 
