@@ -55,9 +55,11 @@ def check_status(call_return):
     if not call_return in _SC.keys():
         raise KeyError('Unknown error call, may be fatal (lol, just kidding)')
     if 'DRV_SUCCESS' in _SC[call_return]:
-        pass
+        return 'DRV_SUCCESS'
     elif 'DRV_IDLE' in _SC[call_return]:
-        pass
+         return 'DRV_IDLE'
+    elif 'DRV_NO_NEW_DATA' in _SC[call_return]:
+         return 'DRV_NO_NEW_DATA'     
     else:
         raw_message = "Return code: %d ... %s" %(call_return, _SC[call_return])
         raise AndorException(raw_message)
@@ -1011,6 +1013,17 @@ def GetReadOutTime():
     result = andor_solis.GetReadOutTime(ctypes.byref(ReadoutTime))
     check_status(result)
     return float(ReadoutTime.value)
+
+def GetKeepCleanTime():
+    """ This function will return the time to perform a keep clean cycle. 
+    This function should be used after all the acquisitions settings have been set, 
+    e.g. SetExposureTime, SetKineticCycleTime and SetReadMode etc. The value 
+    returned is the actual times used in subsequent acquisitions.""" 
+    andor_solis.GetKeepCleanTime.restype = ctypes.c_uint
+    KeepCleanTime = ctypes.c_float()
+    result = andor_solis.GetKeepCleanTime(ctypes.byref(KeepCleanTime))
+    check_status(result)
+    return float(KeepCleanTime.value)    
 
 @uint_winapi()
 def WaitForAcquisition():

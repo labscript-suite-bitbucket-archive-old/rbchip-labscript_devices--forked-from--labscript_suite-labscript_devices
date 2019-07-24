@@ -91,6 +91,7 @@ class AndorCam(object):
         self.features = features.check(self.andor_capabilities.ulFeatures)
         self.emgain_capability = em_gain.check(self.andor_capabilities.ulEMGainCapability)
 
+
     def enable_cooldown(self, temperature_setpoint=20):
         """ Calls all the functions relative to temperature control
         and stabilization. Enables cooling down, waits for stabilization
@@ -174,7 +175,7 @@ class AndorCam(object):
             self.index_vs_speed = custom_option
             n_available_vertical_speeds = GetNumberVSSpeeds()
             if not custom_option in range(n_available_vertical_speeds):
-                raise ValueError("Invalida vertical shift speed custom option value")
+                raise ValueError("Invalid vertical shift speed custom option value")
             else:
                 self.vs_speed = GetVSSpeed(custom_option)
                 SetVSSpeed(self.index_vs_speed)
@@ -203,6 +204,8 @@ class AndorCam(object):
         self.hs_speed = intermediate_speed
         SetADChannel(ad_number)
         SetHSSpeed(0, self.index_hs_speed)
+        # Get actual horizontal shifting (i.e. digitization) speed
+        self.horizontal_shift_speed = GetHSSpeed(ad_number,0,self.index_hs_speed)
      
     def setup_acquisition(self, added_attributes={}):
         """ Main acquisition configuration method. Available acquisition modes are
@@ -259,6 +262,7 @@ class AndorCam(object):
 
         # Get actual timing information
         self.exposure_time, self.accum_timing, self.kinetics_timing = GetAcquisitionTimings()
+
     
         if 'fast_kinetics' in self.acquisition_mode:
             self.exposure_time = GetFKExposureTime()   
@@ -269,7 +273,14 @@ class AndorCam(object):
         # Arm sensor
         self.armed = True
 
-        # self.readout_time = GetReadOutTime()
+        self.keepClean_time = GetKeepCleanTime()
+        # Note: This call breaks in FK mode... unknown reasons
+        if 'fast_kinetics' not in self.acquisition_mode: 
+           self.readout_time = GetReadOutTime()
+
+        else:
+            # Made up number
+           self.readout_time = 1000.0 
        
     def configure_accumulate(self, **attrs):
         """ Takes a sequence of single scans and adds them together """
@@ -288,10 +299,11 @@ class AndorCam(object):
         the camera, a sequence of accumulated scans """
 
         SetNumberKinetics(attrs['number_kinetics'])
+        #SetKineticCycleTime(attrs['kinetics_period'])
 
         if 'internal' in attrs['trigger'] and attrs['number_kinetics'] > 1:
             SetKineticCycleTime(attrs['kinetics_period'])
-                
+
         # Setup accumulations for the series if necessary
         if attrs['number_accumulations'] > 1:
             self.configure_accumulate(**attrs)
@@ -338,6 +350,7 @@ class AndorCam(object):
         'internal':0, 
         'external':1, 
         'external_start':6,
+        'external_exposure':7,
         }
 
         edge_modes = {
@@ -454,6 +467,12 @@ class AndorCam(object):
             if 'DRV_IDLE' in self.acquisition_status:
                 self.armed = False
                 self.available_images = GetNumberAvailableImages()
+
+                # try: 
+                #     self.available_images = GetNumberAvailableImages()
+                # except Exception as e:
+                #     print(e)
+                #     self.available_images = np.zeros(self.image_shape) 
             else:
                 self.armed = False
                 AbortAcquisition()
@@ -463,6 +482,12 @@ class AndorCam(object):
     def download_acquisition(self):
         """ Download buffered acquisition """
         return GetAcquiredData(self.image_shape).reshape(self.image_shape)
+        # try: 
+        #     data = GetAcquiredData(self.image_shape).reshape(self.image_shape)
+        # except Exception as e:
+        #     print(e)
+        #     data = np.zeros(self.image_shape)       
+        # return data
 
     def abort_acquisition(self):
         """Abort"""
@@ -479,14 +504,14 @@ class AndorCam(object):
 if __name__ in '__main__':
     pass
 #     cam = AndorCam()
-
-#     # First test should arm with default attrs and go
+    
+     # First test should arm with default attrs and go
 #     cam.setup_acquisition(added_attributes={'exposure_time':25*ms,})
 #     cam.snap()
 #     single_acq_image = cam.grab_acquisition()
-# #    
-# #    # Second test, 3-shot kinetic series, internal trigger,
-# #    # similar to absorption imaging series
+#    
+#      # Second test, 3-shot kinetic series, internal trigger,
+#      # similar to absorption imaging series
 #     internal_kinetics_attrs = {
 #     'exposure_time':20*ms,
 #     'acquisition':'kinetic_series',
@@ -498,8 +523,8 @@ if __name__ in '__main__':
 #     cam.setup_acquisition(internal_kinetics_attrs)
 #     cam.snap()
 #     kinetics_series_images = cam.grab_acquisition()
-    
-    
+#    
+#    
 #     # Third test, 10-shot fast kinetics, internal trigger and no binning.
 #     fast_kinetics_attrs = {
 #     'exposure_time':1*ms,
@@ -512,11 +537,11 @@ if __name__ in '__main__':
 #     cam.setup_acquisition(fast_kinetics_attrs)
 #     cam.snap()
 #     fast_kinetics_image = cam.grab_acquisition()
-    
+#    
 #     import matplotlib.pyplot as plt
 #     plt.figure()
 #     plt.imshow(single_acq_image[0], cmap='seismic')
-    
+#    
 #     plt.figure()
 #     ax = plt.subplot(311)
 #     ax.imshow(kinetics_series_images[0], cmap='seismic')
@@ -524,8 +549,7 @@ if __name__ in '__main__':
 #     ax.imshow(kinetics_series_images[1], cmap='seismic')
 #     ax = plt.subplot(313)
 #     ax.imshow(kinetics_series_images[2], cmap='seismic')
-    
+#    
 #     plt.figure()
 #     plt.imshow(fast_kinetics_image[0], cmap='seismic')
-    
-    
+#    
