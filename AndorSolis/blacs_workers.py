@@ -39,7 +39,7 @@ class AndorCamera(object):
         self.camera.acquire()
         images = self.camera.download_acquisition()
         print(f'Actual exposure time was {self.camera.exposure_time}')
-        return images[-1]
+        return images[-1] # return last element
 
     def configure_acquisition(self, continuous=False, bufferCount=None):
         self.camera.setup_acquisition(self.attributes)
@@ -53,16 +53,32 @@ class AndorCamera(object):
     def grab_multiple(self, n_images, images, waitForNextBuffer=True):
         """Grab n_images into images array during buffered acquistion."""
     
-        # Catch timeout errors, check if abort, else keep trying.
+        # TODO: Catch timeout errors, check if abort, else keep trying.
         
         print(f"Attempting to grab {n_images} acquisition(s).")
-        for _ in range(n_images):
+        print(f"Camera configured in {self.camera.acquisition_mode} mode.")
+        print(f"Actual readout time is {self.camera.readout_time} s.")
+        print(f"Keep clean cycle time is {self.camera.keepClean_time} s.")
+        print(f"Actual kinetics period is {self.camera.kinetics_timing} s.")
+        print(f"Actual exposure time is {self.camera.exposure_time} s.")
+        print(f"Actual digitization speed (HSpeed) is {self.camera.horizontal_shift_speed} MHz.")
+        for image_number in range(n_images):
             self.camera.acquire()
+            print(f"    {image_number}: Acquire complete")
             downloaded = self.camera.download_acquisition()
+            print(f"    {image_number}: Download complete")
             images.append(downloaded)
             self.camera.armed = True
         self.camera.armed = False
         print(f"Got {len(images)} of {n_images} acquisition(s).")
+
+        # print(f"Attempting to grab {n_images} acquisition(s).")
+        # # if self.attributes['number_kinetics']>1: 
+        # #     n_images = self.attributes['number_kinetics']
+        # self.camera.acquire()
+        # for img in self.camera.download_acquisition():
+        #     images.append(img)
+        # print(f"Got {len(images)} of {n_images} images.")
 
 
     def stop_acquisition(self):

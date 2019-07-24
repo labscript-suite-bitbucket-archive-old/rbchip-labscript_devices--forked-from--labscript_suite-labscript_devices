@@ -258,7 +258,7 @@ class IMAQdxCameraWorker(Worker):
         self.smart_cache = {}
         self.set_attributes_smart(self.camera_attributes)
         self.set_attributes_smart(self.manual_mode_camera_attributes)
-        print("Initialisation complete")
+        print("Initialization complete")
         self.images = None
         self.n_images = None
         self.attributes_to_save = None
