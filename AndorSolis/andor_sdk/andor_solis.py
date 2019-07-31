@@ -282,7 +282,7 @@ def GetAcquiredData16(shape):
     andor_solis.GetAcquiredData16.restype = ctypes.c_uint
     size = np.prod(shape)
     arr = (ctypes.c_int*size)()
-    result =  andor_solis.GetAcquiredData16(ctypes.pointer(arr[0]), 
+    result =  andor_solis.GetAcquiredData16(ctypes.pointer(arr), 
                                             ctypes.c_ulong(size))
     check_status(result)
     return np.ctypeslib.as_array(arr)
@@ -809,6 +809,22 @@ def SetVSSpeed(index):
     """ This function will set the vertical speed to be used for 
         subsequent acquisitions. 
         Valid values: 0 to GetNumberVSSpeeds - 1""" 
+    return None   
+
+@uint_winapi([ctypes.c_int])
+def SetVSAmplitude(state):
+    """ If you choose a high readout speed (a low readout time), then 
+    you should also consider increasing the amplitude of the Vertical 
+    Clock Voltage. There are five levels of amplitude available for you to choose from:
+        0 - Normal
+        +1
+        +2
+        +3
+        +4
+    Exercise caution when increasing the amplitude of the vertical clock voltage, since 
+    higher clocking voltages may result in increased clock-induced charge (noise) in your signal. 
+    In general, only the very highest vertical clocking speeds are likely to benefit from an 
+    increased vertical clock voltage amplitude.""" 
     return None
 
 def GetNumberVSSpeeds():
