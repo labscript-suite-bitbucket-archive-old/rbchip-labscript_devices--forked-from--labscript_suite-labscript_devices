@@ -59,9 +59,10 @@ class AndorCamera(object):
         print(f"Camera configured in {self.camera.acquisition_mode} mode.")
         print(f"Actual readout time is {self.camera.readout_time} s.")
         print(f"Keep clean cycle time is {self.camera.keepClean_time} s.")
-        print(f"Actual kinetics period is {self.camera.kinetics_timing} s.")
+        # print(f"Actual kinetics period is {self.camera.kinetics_timing} s.")
         print(f"Actual exposure time is {self.camera.exposure_time} s.")
         print(f"Actual digitization speed (HSpeed) is {self.camera.horizontal_shift_speed} MHz.")
+        print(f"Actual vertical shift speed is {self.camera.vs_speed} us.")
         for image_number in range(n_images):
             self.camera.acquire()
             print(f"    {image_number}: Acquire complete")
@@ -71,14 +72,6 @@ class AndorCamera(object):
             self.camera.armed = True
         self.camera.armed = False
         print(f"Got {len(images)} of {n_images} acquisition(s).")
-
-        # print(f"Attempting to grab {n_images} acquisition(s).")
-        # # if self.attributes['number_kinetics']>1: 
-        # #     n_images = self.attributes['number_kinetics']
-        # self.camera.acquire()
-        # for img in self.camera.download_acquisition():
-        #     images.append(img)
-        # print(f"Got {len(images)} of {n_images} images.")
 
 
     def stop_acquisition(self):
