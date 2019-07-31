@@ -178,7 +178,8 @@ class AndorCam(object):
                 raise ValueError("Invalid vertical shift speed custom option value")
             else:
                 self.vs_speed = GetVSSpeed(custom_option)
-                SetVSSpeed(self.index_vs_speed)
+                SetVSSpeed(self.index_vs_speed) #Smaller number is faster for SetVSSpees, by default we are using 1 and fastest is 0 - E.A.
+                #SetVSAmplitude(2)
         else:
             self.number_fkvs_speeds = GetNumberFKVShiftSpeeds()
             if not custom_option in range(self.number_fkvs_speeds):
@@ -219,9 +220,11 @@ class AndorCam(object):
         self.acquisition_mode = self.acquisition_attributes['acquisition']
 
         if self.acquisition_attributes['preamp']:
-            self.enable_preamp(self.acquisition_attributes['preamp_gain'])
+            pass
+            #self.enable_preamp(self.acquisition_attributes['preamp_gain'])
         if self.acquisition_attributes['emccd']:
-            self.enable_emccd(self.acquisition_attributes['emccd_gain'])
+            pass
+            #self.enable_emccd(self.acquisition_attributes['emccd_gain'])
 
         # Available modes
         modes = {
@@ -233,9 +236,20 @@ class AndorCam(object):
         }
 
         SetAcquisitionMode(modes[self.acquisition_mode])
-
         # Set readout
         self.setup_readout(**self.acquisition_attributes)
+
+        self.setup_trigger(**self.acquisition_attributes)
+
+        # Set exposure time, note that this may be overriden 
+        # by the readout, trigger or shutter timings thereafter
+        if 'exposure_time' in self.acquisition_attributes.keys():
+            SetExposureTime(self.acquisition_attributes['exposure_time'])
+
+        # Configure horizontal shifting (serial register clocks) E.A.
+        self.setup_horizontal_shift()
+        # Configure vertical shifting (image and storage area clocks)
+        self.setup_vertical_shift()
 
         # Add acquisition specifications
         if 'accumulate' in self.acquisition_mode:
@@ -247,28 +261,17 @@ class AndorCam(object):
         elif 'run_till_abort' in self.acquisition_mode:
             self.configure_run_till_abort(**self.acquisition_attributes)
 
-        # Configure shifting
-        self.setup_vertical_shift()
-        self.setup_horizontal_shift()
-
-        # Setup shutter and trigger
+        # Set image (binning, cropping)
+        self.setup_image(**self.acquisition_attributes)    
+        # Setup shutter
         self.setup_shutter(**self.acquisition_attributes)
-        self.setup_trigger(**self.acquisition_attributes)
 
-        # Set exposure time, note that this may be overriden 
-        # by the readout, trigger or shutter timings thereafter
-        if 'exposure_time' in self.acquisition_attributes.keys():
-            SetExposureTime(self.acquisition_attributes['exposure_time'])
 
         # Get actual timing information
         self.exposure_time, self.accum_timing, self.kinetics_timing = GetAcquisitionTimings()
-
     
         if 'fast_kinetics' in self.acquisition_mode:
             self.exposure_time = GetFKExposureTime()   
-
-        # Set image (binning, cropping)
-        self.setup_image(**self.acquisition_attributes)
         
         # Arm sensor
         self.armed = True
@@ -281,6 +284,7 @@ class AndorCam(object):
         else:
             # Made up number
            self.readout_time = 1000.0 
+
        
     def configure_accumulate(self, **attrs):
         """ Takes a sequence of single scans and adds them together """
@@ -456,8 +460,8 @@ class AndorCam(object):
             self.acquisition_status = GetStatus()
             if 'DRV_IDLE' in self.acquisition_status:
                 StartAcquisition()
-                homemade_wait_for_acquisition()
-                #WaitForAcquisitionTimeOut(int(round(acquisition_timeout)))
+                #homemade_wait_for_acquisition()
+                WaitForAcquisitionTimeOut(int(round(acquisition_timeout)))
                 #WaitForAcquisition()
             
             # Last chance, check if the acquisition is finished, update 
