@@ -268,8 +268,8 @@ def GetAcquiredData(shape):
         (32-bit signed integers). The “array” must be large 
         enough to hold the complete data set. """ 
     andor_solis.GetAcquiredData.restype = ctypes.c_uint
-    size = np.prod(shape).astype(int)
-    arr = (ctypes.c_int*size)()
+    size = np.prod(shape)
+    arr = (ctypes.c_int32*size)()
     result =  andor_solis.GetAcquiredData(ctypes.pointer(arr), 
                                           ctypes.c_ulong(size))
     check_status(result)
@@ -281,7 +281,7 @@ def GetAcquiredData16(shape):
         complete data set. """ 
     andor_solis.GetAcquiredData16.restype = ctypes.c_uint
     size = np.prod(shape)
-    arr = (ctypes.c_int*size)()
+    arr = (ctypes.c_uint16*size)() # not 100% sure this should be unsigned.
     result =  andor_solis.GetAcquiredData16(ctypes.pointer(arr), 
                                             ctypes.c_ulong(size))
     check_status(result)
@@ -293,7 +293,7 @@ def GetAcquiredFloatData(shape):
     size = ctypes.c_ulong(shape[0]*shape[1])
     pass
 
-def GetAcquisitionProgress(acc, series):
+def GetAcquisitionProgress():
     """ This function will return information on the progress 
         of the current acquisition. It can be called at any 
         time but is best used in conjunction with SetDriverEvent.
@@ -786,6 +786,96 @@ def SetReadMode(mode):
                             4 Image. """
     return None
 
+@uint_winapi([ctypes.c_int, ctypes.c_int])
+def SetSingleTrack(center_row, height):
+    """ This function will set the single track parameters. The parameters are 
+    validated in the following order: centre row and then track height.
+        
+        Parameters:
+            int center_row: centre row of track
+            
+            int height: height of track
+
+        Valid values:
+            center_row:    
+                Valid range 1 to number of vertical pixels.
+                1 conventional/Extended NIR Mode(clara)
+            heigth: 
+                Valid range > 1 (maximum value depends on centre row and number of vertical pixels).
+    """
+    return None
+
+
+@uint_winapi([ctypes.c_int, ctypes.c_int, ctypes.c_int])
+def SetCropMode(active, height, reserved):
+    """This function effectively reduces the dimensions of the CCD by excluding some rows or columns 
+    to achieve higher throughput. In isolated crop mode iXon, Newton and iKon cameras can operate in 
+    either Full Vertical Binning or Imaging read modes. iDus can operate in Full Vertical Binning read 
+    mode only.
+    Note: It is important to ensure that no light falls on the excluded region otherwise the acquired 
+    data will be corrupted.
+     Parameters:
+    int active: 1 – Crop mode is ON.
+                0 – Crop mode is OFF.
+
+    int height: The selected crop height. This value must be between 1 and the CCD height.
+
+    int reserved
+
+    """
+    return None
+
+@uint_winapi([ctypes.c_int, ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int])
+def SetIsolatedCropMode(active, height, width, vbin, hbin):
+    """This function effectively reduces the dimensions of the CCD by excluding some rows or columns 
+    to achieve higher throughput. In isolated crop mode iXon, Newton and iKon cameras can operate in 
+    either Full Vertical Binning or Imaging read modes. iDus can operate in Full Vertical Binning read 
+    mode only.
+    Note: It is important to ensure that no light falls on the excluded region otherwise the acquired 
+    data will be corrupted.
+     Parameters:
+    int active: 1 – Crop mode is ON.
+                0 – Crop mode is OFF.
+
+    int height: The selected crop height. This value must be between 1 and the CCD height.
+
+    int cropwidth: The selected crop width. This value must be between 1 and the CCD width.
+
+    int vbin: The selected vertical binning.
+
+    int hbin: The selected horizontal binning.
+
+    """
+    return None
+
+@uint_winapi([ctypes.c_int, ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int])
+def SetIsolatedCropModeEx(active, height, width, vbin, hbin, cropleft, cropbottom):
+    """This function effectively reduces the dimensions of the CCD by excluding some rows or columns 
+    to achieve higher throughput. In isolated crop mode iXon, Newton and iKon cameras can operate in 
+    either Full Vertical Binning or Imaging read modes. iDus can operate in Full Vertical Binning read 
+    mode only.
+    Note: It is important to ensure that no light falls on the excluded region otherwise the acquired 
+    data will be corrupted.
+     Parameters:
+    int active: 1 – Crop mode is ON.
+                0 – Crop mode is OFF.
+
+    int height: The selected crop height. This value must be between 1 and the CCD height.
+
+    int cropwidth: The selected crop width. This value must be between 1 and the CCD width.
+
+    int vbin: The selected vertical binning.
+
+    int hbin: The selected horizontal binning.
+
+    int cropleft: crop left starting point
+
+    int cropbottom: crop bottom starting point
+
+    """
+    return None
+
+
 def GetFastestRecommendedVSSpeed():
     """ As your Andor SDK system may be capable of operating at 
         more than one vertical shift speed this function will 
@@ -920,6 +1010,21 @@ def SetHSSpeed(typ, index):
     """
     return None
 
+@uint_winapi([ctypes.c_int, ])
+def SetOutputAmplifier(typ):
+    """ Sets the second output amplifier
+        
+        Parameters:
+            int typ: type
+            
+        Valid values:
+            typ:    
+                0 electron multiplication/Conventional(clara)
+                1 conventional/Extended NIR Mode(clara)
+    """
+    return None
+
+
 @uint_winapi([ctypes.c_int])
 def SetBaselineClamp(state):
     """ This function turns on and off the baseline clamp functionality. 
@@ -992,6 +1097,18 @@ def SetTriggerMode(mode):
                         10. Software Trigger 
                         12. External Charge Shifting """
     return None
+
+@uint_winapi([ctypes.c_int])
+def SetFastExtTrigger(mode):
+    """This function will enable fast external triggering. When fast external 
+    triggering is enabled the system will NOT wait until a “Keep Clean” cycle 
+    has been completed before accepting the next trigger. This setting will only 
+    have an effect if the trigger mode has been set to External via SetTriggerMode.
+    int mode: 0 Disabled 
+              1 Enabled
+    """
+    return None
+
 
 @uint_winapi([ctypes.c_int, ctypes.c_int, ctypes.c_int, 
              ctypes.c_int, ctypes.c_int, ctypes.c_int])
