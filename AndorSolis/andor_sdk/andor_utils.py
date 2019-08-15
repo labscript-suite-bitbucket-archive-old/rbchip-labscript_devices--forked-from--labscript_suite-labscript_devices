@@ -62,8 +62,6 @@ class AndorCam(object):
         self.serial_number = GetCameraSerialNumber()
         
         # Pull model and other capabilities struct
-        self.andor_capabilities = GetCapabilities()
-        self.model = camera_type.get_type(self.andor_capabilities.ulCameraType)
         self.check_capabilities()
 
         # Pull hardware attributes
@@ -85,6 +83,10 @@ class AndorCam(object):
     def check_capabilities(self):
         """ Do checks based on the _AC dict """
         # Pull the hardware noted capabilities
+        self.andor_capabilities = GetCapabilities()
+
+        self.model = camera_type.get_type(self.andor_capabilities.ulCameraType)
+
         self.acq_caps = acq_mode.check(self.andor_capabilities.ulAcqModes)
         self.read_caps = read_mode.check(self.andor_capabilities.ulReadModes)
         self.trig_capability = trigger_mode.check(self.andor_capabilities.ulTriggerModes)
@@ -93,6 +95,17 @@ class AndorCam(object):
         self.getfuncs = get_functions.check(self.andor_capabilities.ulGetFunctions)
         self.features = features.check(self.andor_capabilities.ulFeatures)
         self.emgain_capability = em_gain.check(self.andor_capabilities.ulEMGainCapability)
+
+        print("Camera Capabilities")
+        print("model: ", self.model)
+        print("acq_caps: ", self.acq_caps)
+        print("read_caps: ", self.read_caps)
+        print("trig_capability: ", self.trig_capability)
+        print("pixmode: ", self.pixmode)
+        print("setfuncs: ", self.setfuncs)
+        print("getfuncs: ", self.getfuncs)
+        print("features: ", self.features)
+        print("emgain_capability: ", self.emgain_capability)
 
 
     def enable_cooldown(self, temperature_setpoint=20):
@@ -431,11 +444,11 @@ class AndorCam(object):
         self.image_shape = (int(attrs['number_kinetics']), int(attrs['height']), int(attrs['width']))
         
         if self.acquisition_mode == 'kinetic_series' and self.acquisition_attributes['CropMode']:
-            # SetOutputAmplifier(0)
+            SetOutputAmplifier(0)
             SetFrameTransferMode(1)
             SetIsolatedCropModeEx(int(1), int(attrs['height']), int(attrs['width']), attrs['ybin'], attrs['xbin'], attrs['left_start'], attrs['bottom_start'])
         else:
-            SetFrameTransferMode(1)
+            SetFrameTransferMode(0)
             SetIsolatedCropModeEx(int(0), int(attrs['height']), int(attrs['width']), attrs['ybin'], attrs['xbin'], attrs['left_start'], attrs['bottom_start'])
             SetImage(
                 attrs['xbin'], 
@@ -500,8 +513,11 @@ class AndorCam(object):
     def download_acquisition(self,):
         """ Download buffered acquisition """
         shape = (self.image_shape[0], int(self.image_shape[1]/int(self.acquisition_attributes['ybin'])), int(self.image_shape[2]/int(self.acquisition_attributes['xbin'])))
+        
+        AbortAcquisition()
         data = GetAcquiredData(shape)
         FreeInternalMemory()
+
         return data.reshape(shape)
 
     def abort_acquisition(self):
