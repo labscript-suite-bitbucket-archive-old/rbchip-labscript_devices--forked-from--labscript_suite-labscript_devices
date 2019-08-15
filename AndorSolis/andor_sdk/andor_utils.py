@@ -218,6 +218,7 @@ class AndorCam(object):
                     intermediate_speed = speed
                     self.index_hs_speed = speed_index
                     ad_number = channel
+
         self.hs_speed = intermediate_speed
         SetADChannel(ad_number)
         SetHSSpeed(0, self.index_hs_speed)
@@ -251,23 +252,15 @@ class AndorCam(object):
         'run_till_abort':5,
         }
 
-        FreeInternalMemory()
-
-        self.setup_readout(**self.acquisition_attributes)
-
-        SetAcquisitionMode(modes[self.acquisition_mode])
-
         self.setup_trigger(**self.acquisition_attributes)
 
-        # Set exposure time, note that this may be overriden 
-        # by the readout, trigger or shutter timings thereafter
-        if 'exposure_time' in self.acquisition_attributes.keys():
-            SetExposureTime(self.acquisition_attributes['exposure_time'])
-
         # Configure horizontal shifting (serial register clocks) E.A.
-        # self.setup_horizontal_shift()
+        self.setup_horizontal_shift()
+
         # Configure vertical shifting (image and storage area clocks)
-        # self.setup_vertical_shift()
+        self.setup_vertical_shift()
+
+        SetAcquisitionMode(modes[self.acquisition_mode])
 
         # Add acquisition specifications
         if 'accumulate' in self.acquisition_mode:
@@ -279,8 +272,13 @@ class AndorCam(object):
         elif 'run_till_abort' in self.acquisition_mode:
             self.configure_run_till_abort(**self.acquisition_attributes)
 
+        # Set exposure time, note that this may be overriden 
+        # by the readout, trigger or shutter timings thereafter
+        SetExposureTime(self.acquisition_attributes['exposure_time'])
+
         self.setup_shutter(**self.acquisition_attributes)
 
+        self.setup_readout(**self.acquisition_attributes)
 
         # Get actual timing information
         self.exposure_time, self.accum_timing, self.kinetics_timing = GetAcquisitionTimings()
@@ -318,14 +316,15 @@ class AndorCam(object):
         the camera, a sequence of accumulated scans """
 
         SetNumberKinetics(attrs['number_kinetics'])
-        #SetKineticCycleTime(attrs['kinetics_period'])
 
-        if 'internal' in attrs['trigger'] and attrs['number_kinetics'] > 1:
+        if attrs['trigger'] == 'internal' and attrs['number_kinetics'] > 1:
             SetKineticCycleTime(attrs['kinetics_period'])
 
         # Setup accumulations for the series if necessary
         if attrs['number_accumulations'] > 1:
             self.configure_accumulate(**attrs)
+        else:
+            SetNumberAccumulations(1)
 
     def configure_fast_kinetics(self, **attrs):
         """ Special readout mode that uses the actual sensor as a temporary 
@@ -432,11 +431,6 @@ class AndorCam(object):
         if attrs['readout'] == 'single_track':
             SetSingleTrack(attrs['center_row'], attrs['height'])
 
-        # Configure horizontal shifting (serial register clocks) E.A.
-        self.setup_horizontal_shift()
-        # Configure vertical shifting (image and storage area clocks)
-        self.setup_vertical_shift()
-
         # For full vertical binning setup a 1d-array shape
         if attrs['readout'] == 'FVB':
             attrs['width'] = 1 
@@ -446,6 +440,14 @@ class AndorCam(object):
         if self.acquisition_mode == 'kinetic_series' and self.acquisition_attributes['CropMode']:
             SetOutputAmplifier(0)
             SetFrameTransferMode(1)
+            SetImage(
+                attrs['xbin'], 
+                attrs['ybin'], 
+                attrs['left_start'],
+                attrs['width']+attrs['left_start']-1,
+                attrs['bottom_start'],
+                attrs['height']+attrs['bottom_start']-1
+            )
             SetIsolatedCropModeEx(int(1), int(attrs['height']), int(attrs['width']), attrs['ybin'], attrs['xbin'], attrs['left_start'], attrs['bottom_start'])
         else:
             SetFrameTransferMode(0)
@@ -487,25 +489,14 @@ class AndorCam(object):
                 StartAcquisition()
                 print("Waiting for ", acquisition_timeout, "ms for timeout"  )
                 homemade_wait_for_acquisition()
-
-                # WaitForAcquisitionTimeOut(int(acquisition_timeout))
-                #WaitForAcquisition()
             
             # Last chance, check if the acquisition is finished, update 
-            # acquisition status and check for acquired data (if any),
-            # otherwise, abort and raise an error
-            self.acquisition_status = GetStatus()
-            if self.acquisition_status == 'DRV_IDLE':
-                self.armed = False
-                #self.available_images = GetNumberAvailableImages()
+            # acquisition status otherwise, abort and raise an error
 
-                # try: 
-                #     self.available_images = GetNumberAvailableImages()
-                # except Exception as e:
-                #     print(e)
-                #     self.available_images = np.zeros(self.image_shape) 
-            else:
-                self.armed = False
+            self.acquisition_status = GetStatus()
+            self.armed = False
+
+            if self.acquisition_status != 'DRV_IDLE':
                 AbortAcquisition()
                 raise AndorException('Acquisition aborted due to timeout')
 
@@ -515,13 +506,22 @@ class AndorCam(object):
         shape = (self.image_shape[0], int(self.image_shape[1]/int(self.acquisition_attributes['ybin'])), int(self.image_shape[2]/int(self.acquisition_attributes['xbin'])))
         
         AbortAcquisition()
-        data = GetAcquiredData(shape)
+        # Lets see what we have in memory
+        available_images = GetNumberAvailableImages()
+
+        if (available_images[1]-available_images[0]) + 1 == shape[0]:
+            data = GetAcquiredData(shape).reshape(shape)
+        else:
+            print("### Incorrect number of images to download:", available_images, " expecting: ", self.image_shape[0])
+            data = np.zeros(shape)
+
         FreeInternalMemory()
 
-        return data.reshape(shape)
+        return data
 
     def abort_acquisition(self):
         """Abort"""
+        print("Debug: Abort Called")
         AbortAcquisition()
 
     def shutdown(self):
