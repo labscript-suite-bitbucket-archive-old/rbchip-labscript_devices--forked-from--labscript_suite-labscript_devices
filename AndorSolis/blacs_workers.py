@@ -38,7 +38,7 @@ class AndorCamera(object):
         self.configure_acquisition()
         self.camera.acquire()
         images = self.camera.download_acquisition()
-        print(f'Actual exposure time was {self.camera.exposure_time}')
+        print(f'Exposure time was {self.camera.exposure_time}')
         return images[-1] # return last element
 
     def configure_acquisition(self, continuous=False, bufferCount=None):
@@ -54,25 +54,37 @@ class AndorCamera(object):
         """Grab n_images into images array during buffered acquistion."""
     
         # TODO: Catch timeout errors, check if abort, else keep trying.
-        
-        print(f"Attempting to grab {n_images} acquisition(s).")
         print(f"Camera configured in {self.camera.acquisition_mode} mode.")
         print(f"Actual readout time is {self.camera.readout_time} s.")
         print(f"Keep clean cycle time is {self.camera.keepClean_time} s.")
-        # print(f"Actual kinetics period is {self.camera.kinetics_timing} s.")
+        if 'kinetic_series' in self.camera.acquisition_mode: 
+            print(f"Actual kinetics period is {self.camera.kinetics_timing} s.")
         print(f"Actual exposure time is {self.camera.exposure_time} s.")
         print(f"Actual digitization speed (HSpeed) is {self.camera.horizontal_shift_speed} MHz.")
         print(f"Actual vertical shift speed is {self.camera.vs_speed} us.")
-        for image_number in range(n_images):
-            self.camera.acquire()
-            print(f"    {image_number}: Acquire complete")
-            downloaded = self.camera.download_acquisition()
-            print(f"    {image_number}: Download complete")
-            images.append(downloaded)
-            self.camera.armed = True
-        self.camera.armed = False
-        print(f"Got {len(images)} of {n_images} acquisition(s).")
+        print(f"    ---> Attempting to grab {n_images} acquisition(s).")
 
+        if 'single' in self.camera.acquisition_mode:            
+            for image_number in range(n_images):
+                self.camera.acquire()
+                print(f"    {image_number}: Acquire complete")
+                downloaded = self.camera.download_acquisition()
+                print(f"    {image_number}: Download complete")
+                images.append(downloaded)
+                self.camera.armed = True
+            self.camera.armed = False
+            print(f"Got {len(images)} of {n_images} acquisition(s).")
+        else:  
+            while len(images) < n_images:
+                self.camera.acquire()
+                print(f"    Acquire complete")
+                downloaded = self.camera.download_acquisition()
+                print(f"    images {len(images)}-{len(images) + len(downloaded)}: Download complete")
+                images.extend(list(downloaded))
+                self.camera.armed = True
+            self.camera.armed = False
+            print(f"Got {len(images)} of {n_images} acquisition(s).")
+   
 
     def stop_acquisition(self):
         pass
