@@ -432,8 +432,10 @@ class AndorCam(object):
         
         if self.acquisition_mode == 'kinetic_series' and self.acquisition_attributes['CropMode']:
             # SetOutputAmplifier(0)
+            SetFrameTransferMode(1)
             SetIsolatedCropModeEx(int(1), int(attrs['height']), int(attrs['width']), attrs['ybin'], attrs['xbin'], attrs['left_start'], attrs['bottom_start'])
         else:
+            SetFrameTransferMode(1)
             SetIsolatedCropModeEx(int(0), int(attrs['height']), int(attrs['width']), attrs['ybin'], attrs['xbin'], attrs['left_start'], attrs['bottom_start'])
             SetImage(
                 attrs['xbin'], 

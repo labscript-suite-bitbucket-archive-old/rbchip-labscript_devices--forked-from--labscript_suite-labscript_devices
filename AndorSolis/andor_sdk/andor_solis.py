@@ -1210,6 +1210,15 @@ def SetFKVShiftSpeed(index):
         index:    Valid values: 0 to GetNumberFKVShiftSpeeds-1 """
     return None
 
+@uint_winapi([ctypes.c_int])
+def SetFrameTransferMode(mode):
+    """This function will set whether an acquisition will readout in Frame Transfer Mode. If the
+        acquisition mode is Single Scan or Fast Kinetics this call will have no affect.
+
+        mode:    0 OFF; 1 ON"""
+    
+    return None
+
 def GetNumberFKVShiftSpeeds():
     """ As your Andor SDK system is capable of operating at more than one 
         fast kinetics vertical shift speed this function will return the 
