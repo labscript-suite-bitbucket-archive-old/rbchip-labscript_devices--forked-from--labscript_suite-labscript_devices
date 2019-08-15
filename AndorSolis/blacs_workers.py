@@ -75,13 +75,11 @@ class AndorCamera(object):
             self.camera.armed = False
             print(f"Got {len(images)} of {n_images} acquisition(s).")
         else:  
-            while len(images) < n_images:
-                self.camera.acquire()
-                print(f"    Acquire complete")
-                downloaded = self.camera.download_acquisition()
-                print(f"    images {len(images)}-{len(images) + len(downloaded)}: Download complete")
-                images.extend(list(downloaded))
-                self.camera.armed = True
+            self.camera.acquire()
+            print(f"    Acquire complete")
+            downloaded = self.camera.download_acquisition()
+            print(f"    images {len(images)}-{len(images) + len(downloaded)}: Download complete")
+            images.extend(list(downloaded))
             self.camera.armed = False
             print(f"Got {len(images)} of {n_images} acquisition(s).")
    
