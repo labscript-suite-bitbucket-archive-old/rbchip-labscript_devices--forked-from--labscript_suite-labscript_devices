@@ -4,6 +4,8 @@ import time
 from .andor_solis import *
 from .andor_capabilities import *
 
+from zprocess import rich_print
+
 s, ms, us, ns = 1.0, 1e-3, 1e-6, 1e-9
 
 class AndorCam(object):
@@ -57,7 +59,7 @@ class AndorCam(object):
         pulls several properties from the hardware side such 
         as information and capabilities, which are useful for
         future acquisition settings """
-        print('Connecting to camera...')
+        rich_print('Connecting to camera...', color='yellow')
         Initialize()
         self.serial_number = GetCameraSerialNumber()
         
@@ -96,16 +98,16 @@ class AndorCam(object):
         self.features = features.check(self.andor_capabilities.ulFeatures)
         self.emgain_capability = em_gain.check(self.andor_capabilities.ulEMGainCapability)
 
-        print("Camera Capabilities")
-        print("model: ", self.model)
-        print("acq_caps: ", self.acq_caps)
-        print("read_caps: ", self.read_caps)
-        print("trig_capability: ", self.trig_capability)
-        print("pixmode: ", self.pixmode)
-        print("setfuncs: ", self.setfuncs)
-        print("getfuncs: ", self.getfuncs)
-        print("features: ", self.features)
-        print("emgain_capability: ", self.emgain_capability)
+        rich_print("Camera Capabilities", color='cornflowerblue')
+        #print("model: ", self.model)
+        rich_print("acq_caps: ", self.acq_caps, color='lightsteelblue')
+        rich_print("read_caps: ", self.read_caps, color='lightsteelblue')
+        rich_print("trig_capability: ", self.trig_capability, color='lightsteelblue')
+        rich_print("pixmode: ", self.pixmode, color='lightsteelblue')
+        #print("setfuncs: ", self.setfuncs)
+        #print("getfuncs: ", self.getfuncs)
+        #print("features: ", self.features)
+        #print("emgain_capability: ", self.emgain_capability)
 
 
     def enable_cooldown(self, temperature_setpoint=20):
@@ -475,11 +477,11 @@ class AndorCam(object):
                 self.acquisition_status = GetStatus()
                 t0 = time.time() - start_wait
                 if t0 > acquisition_timeout*ms:
-                    print("homemade_wait_for_acquisition: timeout occured")
+                    rich_print("homemade_wait_for_acquisition: timeout occured", color='firebrick')
                     break
                 time.sleep(0.05)
-            print("Leaving homemade_wait with status ",  self.acquisition_status)
-            print("homemade_wait_for_acquisition: elapsed time", t0*1000, "ms, compared to timeout of ", acquisition_timeout, "ms")
+            rich_print(f"Leaving homemade_wait with status {self.acquisition_status} ", color='goldenrod')
+            rich_print(f"homemade_wait_for_acquisition: elapsed time {t0/ms} ms, out of max {acquisition_timeout} ms", color='goldenrod')
                                                             
         if not self.armed:
             raise Exception("Cannot start acquisition until armed")
@@ -487,7 +489,7 @@ class AndorCam(object):
             self.acquisition_status = GetStatus()
             if 'DRV_IDLE' in self.acquisition_status:
                 StartAcquisition()
-                print("Waiting for ", acquisition_timeout, "ms for timeout"  )
+                rich_print(f"Waiting for {acquisition_timeout} ms for timeout ...", color='yellow')
                 homemade_wait_for_acquisition()
             
             # Last chance, check if the acquisition is finished, update 
@@ -521,7 +523,7 @@ class AndorCam(object):
 
     def abort_acquisition(self):
         """Abort"""
-        print("Debug: Abort Called")
+        rich_print("Debug: Abort Called", color='yellow')
         AbortAcquisition()
 
     def shutdown(self):
