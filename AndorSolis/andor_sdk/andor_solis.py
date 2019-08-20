@@ -1,5 +1,5 @@
 # -*- encoding: UTF8 -*-
-# 
+#
 # __author__ = pacosalces
 #   "I'm not a wrapper"
 #
@@ -23,7 +23,7 @@ current_dir = os.path.abspath(os.path.realpath(os.path.dirname(__file__)))
 try:
     if 'Windows' in platform.system(): 
         # Usually found here
-        dll_dir = r'C:\Program Files\Andor SOLIS\Drivers'
+        dll_dir = R'C:\Program Files\Andor SOLIS\Drivers'
         # Usual dir exists?
         if os.path.exists(dll_dir):
             raise OSError('Path does not exist, please set dll path')
@@ -43,32 +43,32 @@ finally:
     andor_solis = ctypes.cdll.LoadLibrary(libpath)
 
 class AndorException(Exception):
-        """ Base class for andor exceptions"""
-        pass
+    """ Base class for andor exceptions"""
+
+    pass
 
 def check_status(call_return):
-    """ A function to query the function call status. 
-        Error handling is done based on the returned 
-        raw message. More info about the raw messages 
-        can be found in the SDK documentation. """
-    
+    """ Queries the function call status. Based on the 
+        return message, errors are handled. More info about 
+        the raw messages can be found in the SDK documentation."""
+
     if not call_return in _SC.keys():
         raise KeyError('Unknown error call, may be fatal (lol, just kidding)')
     if 'DRV_SUCCESS' in _SC[call_return]:
         return 'DRV_SUCCESS'
     elif 'DRV_IDLE' in _SC[call_return]:
-         return 'DRV_IDLE'
+        return 'DRV_IDLE'
     elif 'DRV_NO_NEW_DATA' in _SC[call_return]:
-         return 'DRV_NO_NEW_DATA'     
+        return 'DRV_NO_NEW_DATA'
     else:
-        raw_message = "Return code: %d ... %s" %(call_return, _SC[call_return])
+        raw_message = "Return code: %d ... %s" % (call_return, _SC[call_return])
         raise AndorException(raw_message)
-        
 
 def uint_winapi(argtypes=[]):
     """ Call decorator for *pure* input functions,
         (functions that don't return anything).
         First layer takes the input arg types. """
+
     def args_decorator(sdk_func):
         """ Second layer sets argtypes as well as 
             the return type, which is a uint for 
@@ -103,6 +103,7 @@ def AbortAcquisition():
         if one is active. """
     return None
 
+
 @uint_winapi()
 def CancelWait():
     """ This function restarts a thread which is sleeping
@@ -110,6 +111,7 @@ def CancelWait():
         sleeping thread will return from WaitForAcquisition
         with a value not equal to DRV_SUCCESS. """
     return None
+
 
 @uint_winapi()
 def CoolerOFF():
@@ -119,6 +121,7 @@ def CoolerOFF():
         immediately to the calling application. """
     return None
 
+
 @uint_winapi()
 def CoolerON():
     """ Switches ON the cooling. On some systems the rate 
@@ -127,6 +130,7 @@ def CoolerON():
         Control is returned immediately to the calling 
         application. """
     return None
+
 
 def DemosaicImage():
     """ Demosaics an image taken with a CYMG CCD into 
@@ -154,7 +158,7 @@ def EnableKeepCleans(mode):
         way the exposure time is effectively the exposure
         time between triggers. The Keep Clean cycle is enabled 
         by default. The feature capability AC_FEATURES_KEEPCLEANCONTROL 
-        determines if this function can be called for the camera. """ 
+        determines if this function can be called for the camera. """
     return None
 
 @uint_winapi([ctypes.c_int])
@@ -162,6 +166,7 @@ def EnableSensorCompensation(iMode):
     """ This function enables/disables the on camera 
         sensor compensation. """
     return None
+
 
 @uint_winapi()
 def FreeInternalMemory():
@@ -171,6 +176,7 @@ def FreeInternalMemory():
         data from last acquisition cannot be retrived. """
     return None
 
+
 def Filter_GetAveragingFactor():
     """ Returns the current averaging factor value. """
     andor_solis.Filter_GetAveragingFactor.restype = ctypes.c_uint
@@ -178,6 +184,7 @@ def Filter_GetAveragingFactor():
     result = andor_solis.Filter_GetAveragingFactor(ctypes.byref(averagingFactor))
     check_status(result)
     return int(averagingFactor.value)
+
 
 def Filter_GetAveragingFrameCount():
     """ Returns the current frame count value. """
@@ -187,6 +194,7 @@ def Filter_GetAveragingFrameCount():
     check_status(result)
     return int(frames.value)
 
+
 def Filter_GetDataAveragingMode():
     """ Returns the current averaging mode. """
     andor_solis.Filter_GetDataAveragingMode.restype = ctypes.c_uint
@@ -194,6 +202,7 @@ def Filter_GetDataAveragingMode():
     result = andor_solis.Filter_GetDataAveragingMode(ctypes.byref(mode))
     check_status(result)
     return int(mode.value)
+
 
 def Filter_GetMode():
     """ Returns the current Noise Filter mode. """
@@ -203,13 +212,15 @@ def Filter_GetMode():
     check_status(result)
     return int(mode.value)
 
+
 def Filter_GetThreshold():
-    """ Returns the current Noise Filter threshold value. """ 
+    """ Returns the current Noise Filter threshold value. """
     andor_solis.Filter_GetThreshold.restype = ctypes.c_uint
     threshold = ctypes.c_uint()
     result = andor_solis.Filter_GetThreshold(ctypes.byref(threshold))
     check_status(result)
     return float(threshold.value)
+
 
 @uint_winapi([ctypes.c_int])
 def Filter_SetAveragingFactor(averagingFactor):
@@ -219,6 +230,7 @@ def Filter_SetAveragingFactor(averagingFactor):
         FILTERS in the Special Guides section of the manual. """
     return None
 
+
 @uint_winapi([ctypes.c_int])
 def Filter_SetAveragingFrameCount(frames):
     """ Sets the number of frames to be used when using 
@@ -227,6 +239,7 @@ def Filter_SetAveragingFrameCount(frames):
         AVERAGING FILTERS in the Special Guides section of 
         the manual. """
     return None
+
 
 @uint_winapi([ctypes.c_int])
 def Filter_SetDataAveragingMode(mode):
@@ -239,6 +252,7 @@ def Filter_SetDataAveragingMode(mode):
                             6 – Frame Averaging Filter """
     return None
 
+
 @uint_winapi([ctypes.c_int])
 def Filter_SetMode(mode):
     """ Set the Noise Filter to use; For information on 
@@ -249,8 +263,9 @@ def Filter_SetMode(mode):
                             1 – Median Filter
                             2 – Level Above Filter
                             3 – Interquartile Range Filter
-                            4 – Noise Threshold Filter. """ 
+                            4 – Noise Threshold Filter. """
     return None
+
 
 @uint_winapi([ctypes.c_float])
 def Filter_SetThreshold(threshold):
@@ -262,36 +277,36 @@ def Filter_SetThreshold(threshold):
                             0 – 10 for all other filters. """
     return None
 
+
 def GetAcquiredData(shape):
     """ This function will return the data from the last 
         acquisition. The data are returned as long integers 
         (32-bit signed integers). The “array” must be large 
-        enough to hold the complete data set. """ 
+        enough to hold the complete data set. """
     andor_solis.GetAcquiredData.restype = ctypes.c_uint
     size = np.prod(shape)
-    arr = (ctypes.c_int32*size)()
-    result =  andor_solis.GetAcquiredData(ctypes.pointer(arr), 
-                                          ctypes.c_ulong(size))
+    arr = (ctypes.c_int32 * size)()
+    result = andor_solis.GetAcquiredData(ctypes.pointer(arr), ctypes.c_ulong(size))
     check_status(result)
     return np.ctypeslib.as_array(arr)
 
 def GetAcquiredData16(shape):
     """ 16-bit version of the GetAcquiredData function. 
         The “array” must be large enough to hold the 
-        complete data set. """ 
+        complete data set. """
     andor_solis.GetAcquiredData16.restype = ctypes.c_uint
     size = np.prod(shape)
-    arr = (ctypes.c_uint16*size)() # not 100% sure this should be unsigned.
-    result =  andor_solis.GetAcquiredData16(ctypes.pointer(arr), 
-                                            ctypes.c_ulong(size))
+    arr = (ctypes.c_uint16 * size)()  # not 100% sure this should be unsigned.
+    result = andor_solis.GetAcquiredData16(ctypes.pointer(arr), ctypes.c_ulong(size))
     check_status(result)
     return np.ctypeslib.as_array(arr)
 
 def GetAcquiredFloatData(shape):
-    """ This function is reserved """ 
-    arr = (ctypes.c_float*shape[0]*shape[1])()
-    size = ctypes.c_ulong(shape[0]*shape[1])
+    """ This function is reserved """
+    arr = (ctypes.c_float * shape[0] * shape[1])()
+    size = ctypes.c_ulong(shape[0] * shape[1])
     pass
+
 
 def GetAcquisitionProgress():
     """ This function will return information on the progress 
@@ -308,12 +323,11 @@ def GetAcquisitionProgress():
         just started, returning DRV_ACQUIRING, otherwise it will 
         return DRV_IDLE. For example, if accum=2 and series=3 then 
         the acquisition has completed 3 in the series and 2 
-        accumulations in the 4 scan of the series. """ 
+        accumulations in the 4 scan of the series. """
     andor_solis.GetAcquisitionProgress.restype = ctypes.c_uint
     acc = ctypes.c_long()
     series = ctypes.c_long()
-    result = andor_solis.GetAcquisitionProgress(ctypes.byref(acc), 
-                                                ctypes.byref(series))
+    result = andor_solis.GetAcquisitionProgress(ctypes.byref(acc), ctypes.byref(series))
     check_status(result)
     return int(acc.value), int(series.value)
 
@@ -333,9 +347,9 @@ def GetAcquisitionTimings():
     exp = ctypes.c_float()
     acc = ctypes.c_float()
     kin = ctypes.c_float()
-    result = andor_solis.GetAcquisitionTimings(ctypes.byref(exp), 
-                                            ctypes.byref(acc),
-                                            ctypes.byref(kin))
+    result = andor_solis.GetAcquisitionTimings(
+        ctypes.byref(exp), ctypes.byref(acc), ctypes.byref(kin)
+    )
     check_status(result)
     return (float(exp.value), float(acc.value), float(kin.value))
 
@@ -345,16 +359,18 @@ def GetAdjustedRingExposureTimes(inumTimes):
         between requested exposures and the actual exposures. """
     andor_solis.GetAdjustedRingExposureTimes.restype = ctypes.c_uint
     fptimes = ctypes.c_float()
-    result = andor_solis.GetAdjustedRingExposureTimes(ctypes.c_int(inumTimes), 
-                                                      ctypes.byref(fptimes))
+    result = andor_solis.GetAdjustedRingExposureTimes(
+        ctypes.c_int(inumTimes), ctypes.byref(fptimes)
+    )
     check_status(result)
     return float(fptimes.value)
 
 def GetAllDMAData(shape):
     """ This function is reserved. """
-    arr = (ctypes.c_float*shape[0]*shape[1])()
-    size = ctypes.c_ulong(shape[0]*shape[1])
+    arr = (ctypes.c_float * shape[0] * shape[1])()
+    size = ctypes.c_ulong(shape[0] * shape[1])
     pass
+
 
 def GetAmpDesc(index, char_length):
     """ This function will return a string with an amplifier 
@@ -366,9 +382,9 @@ def GetAmpDesc(index, char_length):
         returned to them from this function. """
     andor_solis.GetAmpDesc.restype = ctypes.c_uint
     name = ctypes.create_string_buffer(STR_BUFFER_SIZE)
-    result = andor_solis.GetAmpDesc(ctypes.c_int(index), 
-                                    ctypes.byref(name), 
-                                    ctypes.c_int(char_length))
+    result = andor_solis.GetAmpDesc(
+        ctypes.c_int(index), ctypes.byref(name), ctypes.c_int(char_length)
+    )
     check_status(result)
     return str(name.value)
 
@@ -378,8 +394,7 @@ def GetAmpMaxSpeed(index):
         the index parameter. """
     andor_solis.GetAmpMaxSpeed.restype = ctypes.c_uint
     speed = ctypes.c_float()
-    result = andor_solis.GetAmpMaxSpeed(ctypes.c_int(index), 
-                                        ctypes.byref(speed))
+    result = andor_solis.GetAmpMaxSpeed(ctypes.c_int(index), ctypes.byref(speed))
     check_status(result)
     return float(speed.value)
 
@@ -393,11 +408,13 @@ def GetAvailableCameras():
     check_status(result)
     return int(totalCameras.value)
 
+
 def GetBackground(shape):
     """ This function is reserved. """
-    arr = (ctypes.c_float*shape[0]*shape[1])()
-    size = ctypes.c_ulong(shape[0]*shape[1])
+    arr = (ctypes.c_float * shape[0] * shape[1])()
+    size = ctypes.c_ulong(shape[0] * shape[1])
     pass
+
 
 def GetBaselineClamp():
     """ This function returns the status of the baseline clamp 
@@ -412,13 +429,13 @@ def GetBaselineClamp():
     check_status(result)
     return int(state.value)
 
+
 def GetBitDepth(channel):
     """ This function will retrieve the size in bits of the 
         dynamic range for any available AD channel. """
     andor_solis.GetBitDepth.restype = ctypes.c_uint
     depth = ctypes.c_int()
-    result = andor_solis.GetBitDepth(ctypes.c_int(channel), 
-                                     ctypes.byref(depth))
+    result = andor_solis.GetBitDepth(ctypes.c_int(channel), ctypes.byref(depth))
     check_status(result)
     return int(depth.value)
 
@@ -436,6 +453,7 @@ def GetCameraEventStatus():
     check_status(result)
     return int(camStatus.value)
 
+
 def GetCameraHandle(cameraIndex):
     """ This function returns the handle for the camera specified 
         by cameraIndex. When multiple Andor cameras are installed 
@@ -446,8 +464,9 @@ def GetCameraHandle(cameraIndex):
         is the value returned by the GetAvailableCameras function."""
     andor_solis.GetCameraHandle.restype = ctypes.c_uint
     cameraHandle = ctypes.c_long()
-    result = andor_solis.GetCameraHandle(ctypes.c_long(cameraIndex), 
-                                         ctypes.byref(cameraHandle))
+    result = andor_solis.GetCameraHandle(
+        ctypes.c_long(cameraIndex), ctypes.byref(cameraHandle)
+    )
     check_status(result)
     return int(cameraHandle.value)
 
@@ -463,8 +482,9 @@ def GetCameraInformation(index):
         will be zero. """
     andor_solis.GetCameraInformation.restype = ctypes.c_uint
     information = ctypes.c_long()
-    result = andor_solis.GetCameraInformation(ctypes.c_int(index), 
-                                              ctypes.byref(information))
+    result = andor_solis.GetCameraInformation(
+        ctypes.c_int(index), ctypes.byref(information)
+    )
     check_status(result)
     return int(information.value)
 
@@ -475,6 +495,7 @@ def GetCameraSerialNumber():
     result = andor_solis.GetCameraSerialNumber(ctypes.byref(number))
     check_status(result)
     return int(number.value)
+
 
 def GetCapabilities():
     """ This function will fill in an AndorCapabilities structure 
@@ -487,19 +508,20 @@ def GetCapabilities():
         Individual capabilities are determined by examining certain 
         bits and combinations of bits in the member variables of the 
         AndorCapabilites structure. The next few pages contain a
-        summary of the capabilities currently returned... (pp. 121) """ 
+        summary of the capabilities currently returned... (pp. 121) """
     andor_solis.GetCapabilities.restype = ctypes.c_uint
     caps = AndorCapabilities()
     result = andor_solis.GetCapabilities(ctypes.byref(caps))
     check_status(result)
     return caps
 
+
 def GetControllerCardModel():
     """ This function will retrieve the type of PCI controller card 
         included in your system. This function is not applicable for 
         USB systems. The maximum number of characters that can be
-        returned from this function is 10. """ 
-    andor_solis.GetControllerCardModel.restype = ctypes.c_uint 
+        returned from this function is 10. """
+    andor_solis.GetControllerCardModel.restype = ctypes.c_uint
     controllerCardModel = ctypes.create_string_buffer(STR_BUFFER_SIZE)
     result = andor_solis.GetControllerCardModel(ctypes.byref(controllerCardModel))
     check_status(result)
@@ -511,8 +533,9 @@ def GetCountConvertWavelengthRange(min_wave, max_wave):
     andor_solis.GetCountConvertWavelengthRange.restype = ctypes.c_uint
     min_wave = ctypes.c_float()
     max_wave = ctypes.c_float()
-    result = andor_solis.GetCountConvertWavelengthRange(ctypes.byref(min_wave), 
-                                                        ctypes.byref(max_wave))
+    result = andor_solis.GetCountConvertWavelengthRange(
+        ctypes.byref(min_wave), ctypes.byref(max_wave)
+    )
     check_status(result)
     return float(min_wave.value), float(max_wave.value)
 
@@ -525,19 +548,22 @@ def GetCurrentCamera():
     check_status(result)
     return int(cameraHandle.value)
 
+
 def GetCYMGShift():
-    """ This function is reserved. """ 
+    """ This function is reserved. """
     iXShift = ctypes.POINTER(ctypes.c_int(iXShift))
     iYShift = ctypes.POINTER(ctypes.c_int(iYShift))
     pass
+
 
 def GetDDGExternalOutputEnabled(index):
     """ This function gets the current state of a selected external 
         output. """
     andor_solis.GetDDGExternalOutputEnabled.restype = ctypes.c_uint
     enabled = ctypes.c_ulong()
-    result = andor_solis.GetDDGExternalOutputEnabled(ctypes.c_ulong(index), 
-                                                     ctypes.byref(enabled))
+    result = andor_solis.GetDDGExternalOutputEnabled(
+        ctypes.c_ulong(index), ctypes.byref(enabled)
+    )
     check_status(result)
     return int(enabled.value)
 
@@ -546,8 +572,9 @@ def GetDDGExternalOutputPolarity(index):
         output. """
     andor_solis.GetDDGExternalOutputPolarity.restype = ctypes.c_uint
     polarity = ctypes.c_ulong()
-    result = andor_solis.GetDDGExternalOutputPolarity(ctypes.c_ulong(index), 
-                                                      ctypes.byref(polarity))
+    result = andor_solis.GetDDGExternalOutputPolarity(
+        ctypes.c_ulong(index), ctypes.byref(polarity)
+    )
     check_status(result)
     return int(polarity.value)
 
@@ -557,8 +584,9 @@ def GetDDGExternalOutputStepEnabled(index):
         if this option is currently active. """
     andor_solis.GetDDGExternalOutputStepEnabled.restype = ctypes.c_uint
     enabled = ctypes.c_ulong()
-    result = andor_solis.GetDDGExternalOutputStepEnabled(ctypes.c_ulong(index), 
-                                                         ctypes.byref(enabled))
+    result = andor_solis.GetDDGExternalOutputStepEnabled(
+        ctypes.c_ulong(index), ctypes.byref(enabled)
+    )
     check_status(result)
     return int(enabled.value)
 
@@ -569,9 +597,9 @@ def GetDDGExternalOutputTime(index):
     # In picoseconds
     delay = ctypes.c_uint64()
     width = ctypes.c_uint64()
-    result = andor_solis.GetDDGExternalOutputTime(ctypes.c_ulong(index), 
-                                                  ctypes.byref(delay), 
-                                                  ctypes.byref(width))
+    result = andor_solis.GetDDGExternalOutputTime(
+        ctypes.c_ulong(index), ctypes.byref(delay), ctypes.byref(width)
+    )
     check_status(result)
     return int(delay.value), int(width.value)
 
@@ -585,9 +613,9 @@ def GetDDGStepCoefficients(mode, p1, p2):
     andor_solis.GetDDGStepCoefficients.restype = ctypes.c_uint
     p1 = ctypes.c_double()
     p2 = ctypes.c_double()
-    result = andor_solis.GetDDGStepCoefficients(ctypes.c_ulong(mode), 
-                                                ctypes.byref(p1), 
-                                                ctypes.byref(p2))
+    result = andor_solis.GetDDGStepCoefficients(
+        ctypes.c_ulong(mode), ctypes.byref(p1), ctypes.byref(p2)
+    )
     check_status(result)
     return int(p1.value), int(p2.value)
 
@@ -604,14 +632,14 @@ def GetDDGStepMode():
     check_status(result)
     return int(mode.value)
 
+
 def GetDDGGateTime():
     """ This function can be used to get the actual gate timings 
         for a USB iStar. """
-    andor_solis.GetDDGGateTime.restype = ctypes.c_uint    
+    andor_solis.GetDDGGateTime.restype = ctypes.c_uint
     delay = ctypes.c_uint64()
     width = ctypes.c_uint64()
-    result = andor_solis.GetDDGGateTime(ctypes.byref(delay), 
-                                        ctypes.byref(width))
+    result = andor_solis.GetDDGGateTime(ctypes.byref(delay), ctypes.byref(width))
     check_status(result)
     return int(delay.value), int(width.value)
 
@@ -623,6 +651,7 @@ def GetDDGInsertionDelay():
     check_status(result)
     return int(state.value)
 
+
 def GetDDGIntelligate():
     """ This function gets the current state of Intelligate. """
     andor_solis.GetDDGIntelligate.restype = ctypes.c_uint
@@ -630,6 +659,7 @@ def GetDDGIntelligate():
     result = andor_solis.GetDDGIntelligate(ctypes.byref(state))
     check_status(result)
     return int(state.value)
+
 
 def GetDDGIOC():
     """This function gets the current state of the integrate on chip 
@@ -639,6 +669,7 @@ def GetDDGIOC():
     result = andor_solis.GetDDGIOC(ctypes.byref(state))
     check_status(result)
     return int(state.value)
+
 
 def GetDDGIOCFrequency():
     """ This function can be used to return the actual IOC frequency 
@@ -650,7 +681,8 @@ def GetDDGIOCFrequency():
     check_status(result)
     return int(frequency.value)
 
-def GetDDGIOCNumber(): 
+
+def GetDDGIOCNumber():
     """ This function can be used to return the actual number of pulses 
         that will be triggered. It should only be called once all the 
         conditions of the experiment have been defined."""
@@ -660,6 +692,7 @@ def GetDDGIOCNumber():
     check_status(result)
     return int(numberPulses.value)
 
+
 def GetDDGIOCNumberRequested():
     """ This function can be used to return the number of pulses that 
         were requested by the user."""
@@ -668,6 +701,7 @@ def GetDDGIOCNumberRequested():
     result = andor_solis.GetDDGIOCNumberRequested(ctypes.byref(pulses))
     check_status(result)
     return int(pulses.value)
+
 
 def GetDDGIOCPeriod():
     """ This function can be used to return the actual IOC period that 
@@ -679,9 +713,11 @@ def GetDDGIOCPeriod():
     check_status(result)
     return int(period.value)
 
+
 # ****************************************************************************
 
 # STOPPED AT PAGE 150, at this point add only SDK functions needed for iXon Ultra.
+
 
 @uint_winapi()
 def Initialize(path):
@@ -692,14 +728,14 @@ def Initialize(path):
         pixels, readout speeds etc. """
     return None
 
+
 def GetDetector():
     """ This function returns the size of the detector in pixels. The 
         horizontal axis is taken to be the axis parallel to the readout 
-        register. """ 
+        register. """
     andor_solis.GetDetector.restype = ctypes.c_uint
     xpixels, ypixels = ctypes.c_int(), ctypes.c_int()
-    result = andor_solis.GetDetector(ctypes.byref(xpixels),
-                                     ctypes.byref(ypixels))
+    result = andor_solis.GetDetector(ctypes.byref(xpixels), ctypes.byref(ypixels))
     check_status(result)
     return int(xpixels.value), int(ypixels.value)
 
@@ -712,10 +748,12 @@ def GetHeadModel():
     check_status(result)
     return str(name.value)
 
+
 @uint_winapi()
 def ShutDown():
     """ This function will close the AndorMCD system down."""
     return None
+
 
 def GetHardwareVersion():
     """ This function returns the Hardware version information 
@@ -727,17 +765,23 @@ def GetHardwareVersion():
     dummy2 = ctypes.c_uint()
     CameraFirmwareVersion = ctypes.c_uint()
     CameraFirmwareBuild = ctypes.c_uint()
-    result = andor_solis.GetHardwareVersion(ctypes.byref(PCB),
-                                            ctypes.byref(Decode),
-                                            ctypes.byref(dummy1),
-                                            ctypes.byref(dummy2),
-                                            ctypes.byref(CameraFirmwareVersion),
-                                            ctypes.byref(CameraFirmwareBuild))
+    result = andor_solis.GetHardwareVersion(
+        ctypes.byref(PCB),
+        ctypes.byref(Decode),
+        ctypes.byref(dummy1),
+        ctypes.byref(dummy2),
+        ctypes.byref(CameraFirmwareVersion),
+        ctypes.byref(CameraFirmwareBuild),
+    )
     check_status(result)
-    hardware_v = {'PCB':int(PCB.value), 'Decode':int(Decode.value),
-                  'dummy1':int(dummy1.value), 'dummy2':int(dummy2.value),
-                  'CameraFirmwareVersion':int(CameraFirmwareVersion.value),
-                  'CameraFirmwareBuild':int(CameraFirmwareBuild.value)}
+    hardware_v = {
+        'PCB': int(PCB.value),
+        'Decode': int(Decode.value),
+        'dummy1': int(dummy1.value),
+        'dummy2': int(dummy2.value),
+        'CameraFirmwareVersion': int(CameraFirmwareVersion.value),
+        'CameraFirmwareBuild': int(CameraFirmwareBuild.value),
+    }
     return hardware_v
 
 def GetSoftwareVersion():
@@ -750,16 +794,23 @@ def GetSoftwareVersion():
     vxdVer = ctypes.c_uint()
     dllRev = ctypes.c_uint()
     dllVer = ctypes.c_uint()
-    result = andor_solis.GetSoftwareVersion(ctypes.byref(eprom),
-                                            ctypes.byref(cofFile),
-                                            ctypes.byref(vxdRev),
-                                            ctypes.byref(vxdVer),
-                                            ctypes.byref(dllRev),
-                                            ctypes.byref(dllVer))
+    result = andor_solis.GetSoftwareVersion(
+        ctypes.byref(eprom),
+        ctypes.byref(cofFile),
+        ctypes.byref(vxdRev),
+        ctypes.byref(vxdVer),
+        ctypes.byref(dllRev),
+        ctypes.byref(dllVer),
+    )
     check_status(result)
-    software_v = {'EPROM':int(eprom.value), 'cofFile':int(cofFile.value),
-                  'Driver_rev':int(vxdRev.value), 'Driver_ver':int(vxdVer.value),
-                  'dll_rev':int(dllRev.value), 'dll_ver':int(dllVer.value)}
+    software_v = {
+        'EPROM': int(eprom.value),
+        'cofFile': int(cofFile.value),
+        'Driver_rev': int(vxdRev.value),
+        'Driver_ver': int(vxdVer.value),
+        'dll_rev': int(dllRev.value),
+        'dll_ver': int(dllVer.value),
+    }
     return software_v
 
 @uint_winapi([ctypes.c_int])
@@ -774,6 +825,7 @@ def SetAcquisitionMode(mode):
                 5 Run till abort 
     """
     return None
+
 
 @uint_winapi([ctypes.c_int])
 def SetReadMode(mode):
@@ -885,12 +937,13 @@ def GetFastestRecommendedVSSpeed():
         This function returns the fastest speed which does not 
         require the Vertical Clock Voltage to be adjusted. The values 
         returned are the vertical shift speed index and the actual 
-        speed in microseconds per pixel shift. """ 
+        speed in microseconds per pixel shift. """
     andor_solis.GetFastestRecommendedVSSpeed.restype = ctypes.c_uint
     index = ctypes.c_int()
     speed = ctypes.c_float()
-    result = andor_solis.GetFastestRecommendedVSSpeed(ctypes.byref(index),
-                                                      ctypes.byref(speed))
+    result = andor_solis.GetFastestRecommendedVSSpeed(
+        ctypes.byref(index), ctypes.byref(speed)
+    )
     check_status(result)
     return int(index.value), float(speed.value)
 
@@ -898,8 +951,8 @@ def GetFastestRecommendedVSSpeed():
 def SetVSSpeed(index):
     """ This function will set the vertical speed to be used for 
         subsequent acquisitions. 
-        Valid values: 0 to GetNumberVSSpeeds - 1""" 
-    return None   
+        Valid values: 0 to GetNumberVSSpeeds - 1"""
+    return None
 
 @uint_winapi([ctypes.c_int])
 def SetVSAmplitude(state):
@@ -914,7 +967,7 @@ def SetVSAmplitude(state):
     Exercise caution when increasing the amplitude of the vertical clock voltage, since 
     higher clocking voltages may result in increased clock-induced charge (noise) in your signal. 
     In general, only the very highest vertical clocking speeds are likely to benefit from an 
-    increased vertical clock voltage amplitude.""" 
+    increased vertical clock voltage amplitude."""
     return None
 
 def GetNumberVSSpeeds():
@@ -927,21 +980,21 @@ def GetNumberVSSpeeds():
     check_status(result)
     return int(speeds.value)
 
+
 def GetVSSpeed(index):
     """ As your Andor SDK system may be capable of operating at more than
     one vertical shift speed this function will return the actual speeds 
-    available. The value returned is in microseconds. """ 
+    available. The value returned is in microseconds. """
     andor_solis.GetVSSpeed.restype = ctypes.c_uint
     speed = ctypes.c_float()
-    result = andor_solis.GetVSSpeed(ctypes.c_int(index), 
-                                    ctypes.byref(speed))
+    result = andor_solis.GetVSSpeed(ctypes.c_int(index), ctypes.byref(speed))
     check_status(result)
     return float(speed.value)
 
 def GetNumberADChannels():
     """ As your Andor SDK system may be capable of operating with 
         more than one A-D converter, this function will tell you 
-        the number available. """ 
+        the number available. """
     andor_solis.GetNumberADChannels.restype = ctypes.c_uint
     channels = ctypes.c_int()
     result = andor_solis.GetNumberADChannels(ctypes.byref(channels))
@@ -956,9 +1009,9 @@ def GetNumberHSSpeeds(channel, typ):
                                 1 conventional."""
     andor_solis.GetNumberHSSpeeds.restype = ctypes.c_uint
     speeds = ctypes.c_int()
-    result = andor_solis.GetNumberHSSpeeds(ctypes.c_int(channel),
-                                           ctypes.c_int(typ),
-                                           ctypes.byref(speeds))
+    result = andor_solis.GetNumberHSSpeeds(
+        ctypes.c_int(channel), ctypes.c_int(typ), ctypes.byref(speeds)
+    )
     check_status(result)
     return int(speeds.value)
 
@@ -973,10 +1026,12 @@ def GetHSSpeed(channel, typ, index):
         call to GetNumberHSSpeeds()."""
     andor_solis.GetHSSpeed.restype = ctypes.c_uint
     speed = ctypes.c_float()
-    result = andor_solis.GetHSSpeed(ctypes.c_int(channel),
-                                    ctypes.c_int(typ),
-                                    ctypes.c_int(index),
-                                    ctypes.byref(speed))
+    result = andor_solis.GetHSSpeed(
+        ctypes.c_int(channel),
+        ctypes.c_int(typ),
+        ctypes.c_int(index),
+        ctypes.byref(speed),
+    )
     check_status(result)
     return float(speed.value)
 
@@ -1044,6 +1099,7 @@ def SetExposureTime(time):
         Time should be in seconds """
     return None
 
+
 @uint_winapi([ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int])
 def SetShutter(typ, mode, closingtime, openingtime):
     """ This function controls the behaviour of the shutter. The typ 
@@ -1064,8 +1120,8 @@ def SetShutter(typ, mode, closingtime, openingtime):
         closingtime and openingtime are in milliseconds."""
     return None
 
-@uint_winapi([ctypes.c_int, ctypes.c_int, ctypes.c_int, 
-             ctypes.c_int, ctypes.c_int])
+
+@uint_winapi([ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int])
 def SetShutterEx(typ, mode, closingtime, openingtime, extmode):
     """This function expands the control offered by SetShutter to allow an 
         external shutter and internal shutter to be controlled independently 
@@ -1081,8 +1137,9 @@ def SetShutterEx(typ, mode, closingtime, openingtime, extmode):
         an internal shutter open and close automatically in an experiment, 
         set the extmode parameter to “Open” and set the mode parameter to 
         “Auto”. To not use any shutter in the experiment, set both shutter 
-        modes to permanently open. """ 
+        modes to permanently open. """
     return None
+
 
 @uint_winapi([ctypes.c_int])
 def SetTriggerMode(mode):
@@ -1098,6 +1155,7 @@ def SetTriggerMode(mode):
                         12. External Charge Shifting """
     return None
 
+
 @uint_winapi([ctypes.c_int])
 def SetFastExtTrigger(mode):
     """This function will enable fast external triggering. When fast external 
@@ -1109,9 +1167,9 @@ def SetFastExtTrigger(mode):
     """
     return None
 
-
-@uint_winapi([ctypes.c_int, ctypes.c_int, ctypes.c_int, 
-             ctypes.c_int, ctypes.c_int, ctypes.c_int])
+@uint_winapi(
+    [ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int]
+)
 def SetImage(hbin, vbin, hstart, hend, vstart, vend):
     """ This function will set the horizontal and vertical binning to be 
         used when taking a full resolution image."""
@@ -1120,7 +1178,7 @@ def SetImage(hbin, vbin, hstart, hend, vstart, vend):
 @uint_winapi()
 def StartAcquisition():
     """ This function starts an acquisition. The status of the acquisition 
-        can be monitored via GetStatus(). """ 
+        can be monitored via GetStatus(). """
     return None
 
 def GetStatus():
@@ -1128,7 +1186,7 @@ def GetStatus():
         This function should be called before an acquisition is started to 
         ensure that it is IDLE and during an acquisition to monitor the 
         process. 
-        Wrapped function returns code message. """ 
+        Wrapped function returns code message. """
     andor_solis.GetStatus.restype = ctypes.c_uint
     status = ctypes.c_int()
     result = andor_solis.GetStatus(ctypes.byref(status))
@@ -1140,7 +1198,7 @@ def GetReadOutTime():
         This function should be used after all the acquisitions settings 
         have been set, e.g. SetExposureTime, SetKineticCycleTime and 
         SetReadMode etc. The value returned is the actual times used in 
-        subsequent acquisitions.""" 
+        subsequent acquisitions."""
     andor_solis.GetReadOutTime.restype = ctypes.c_uint
     ReadoutTime = ctypes.c_float()
     result = andor_solis.GetReadOutTime(ctypes.byref(ReadoutTime))
@@ -1151,12 +1209,12 @@ def GetKeepCleanTime():
     """ This function will return the time to perform a keep clean cycle. 
     This function should be used after all the acquisitions settings have been set, 
     e.g. SetExposureTime, SetKineticCycleTime and SetReadMode etc. The value 
-    returned is the actual times used in subsequent acquisitions.""" 
+    returned is the actual times used in subsequent acquisitions."""
     andor_solis.GetKeepCleanTime.restype = ctypes.c_uint
     KeepCleanTime = ctypes.c_float()
     result = andor_solis.GetKeepCleanTime(ctypes.byref(KeepCleanTime))
     check_status(result)
-    return float(KeepCleanTime.value)    
+    return float(KeepCleanTime.value)
 
 @uint_winapi()
 def WaitForAcquisition():
@@ -1176,6 +1234,7 @@ def WaitForAcquisition():
         in this case, as you may have to use CancelWait to exit the function."""
     return None
 
+
 def IsInternalMechanicalShutter():
     """ This function checks if an iXon camera has a mechanical shutter 
         installed. 
@@ -1187,20 +1246,40 @@ def IsInternalMechanicalShutter():
     check_status(result)
     return int(InternalShutter.value)
 
-@uint_winapi([ctypes.c_int, ctypes.c_int, ctypes.c_float,
-              ctypes.c_int, ctypes.c_int, ctypes.c_int])
+
+@uint_winapi(
+    [
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_float,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+    ]
+)
 def SetFastKinetics(exposedRows, seriesLength, time, mode, hbin, vbin):
     """ This function will set the parameters to be used when taking a fast
         kinetics acquisition. """
     return None
 
-@uint_winapi([ctypes.c_int, ctypes.c_int, ctypes.c_float, 
-              ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int])
+
+@uint_winapi(
+    [
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_float,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_int,
+    ]
+)
 def SetFastKineticsEx(exposedRows, seriesLength, time, mode, hbin, vbin, offset):
     """ This function is the same as SetFastKinetics with the addition of an 
         Offset parameter, which will inform the SDK of the first row to be 
         used."""
     return None
+
 
 @uint_winapi([ctypes.c_int])
 def SetFKVShiftSpeed(index):
@@ -1222,7 +1301,7 @@ def SetFrameTransferMode(mode):
 def GetNumberFKVShiftSpeeds():
     """ As your Andor SDK system is capable of operating at more than one 
         fast kinetics vertical shift speed this function will return the 
-        actual number of speeds available.""" 
+        actual number of speeds available."""
     andor_solis.GetNumberFKVShiftSpeeds.restype = ctypes.c_uint
     number = ctypes.c_int()
     result = andor_solis.GetNumberFKVShiftSpeeds(ctypes.byref(number))
@@ -1234,11 +1313,10 @@ def GetFKVShiftSpeedF(index):
         kinetics vertical shift speed this function will return the actual 
         speeds available. The value returned is in microseconds per pixel 
         shift. 
-        index:  Valid values: 0 to GetNumberFKVShiftSpeeds()-1. """ 
+        index:  Valid values: 0 to GetNumberFKVShiftSpeeds()-1. """
     andor_solis.GetFKVShiftSpeedF.restype = ctypes.c_uint
     speed = ctypes.c_float()
-    result = andor_solis.GetFKVShiftSpeedF(ctypes.c_int(index),
-                                           ctypes.byref(speed))
+    result = andor_solis.GetFKVShiftSpeedF(ctypes.c_int(index), ctypes.byref(speed))
     check_status(result)
     return float(speed.value)
 
@@ -1249,10 +1327,11 @@ def GetFKExposureTime():
         SetFKVShiftSpeed. The value returned is the actual time used in 
         subsequent acquisitions."""
     andor_solis.GetFKExposureTime.restype = ctypes.c_uint
-    time = ctypes.c_float() # In seconds
+    time = ctypes.c_float()  # In seconds
     result = andor_solis.GetFKExposureTime(ctypes.byref(time))
     check_status(result)
     return float(time.value)
+
 
 def GetNumberAvailableImages():
     """ This function will return information on the number of available 
@@ -1264,8 +1343,9 @@ def GetNumberAvailableImages():
     andor_solis.GetNumberAvailableImages.restype = ctypes.c_uint
     first = ctypes.c_long()
     last = ctypes.c_long()
-    result = andor_solis.GetNumberAvailableImages(ctypes.byref(first),
-                                                  ctypes.byref(last))
+    result = andor_solis.GetNumberAvailableImages(
+        ctypes.byref(first), ctypes.byref(last)
+    )
     check_status(result)
     return int(first.value), int(last.value)
 
@@ -1275,15 +1355,18 @@ def GetImages(first, last, shape):
         range (i.e. the images have been overwritten or have not yet been 
         acquired then an error will be returned. """
     andor_solis.GetImages.restype = ctypes.c_uint
-    arr = (ctypes.c_long*shape[0]*shape[1])()
-    size = shape[0]*shape[1]*int(abs(last-first))
+    arr = (ctypes.c_long * shape[0] * shape[1])()
+    size = shape[0] * shape[1] * int(abs(last - first))
     validfirst = ctypes.c_long()
     validlast = ctypes.c_long()
-    result = andor_solis.GetImages(ctypes.c_long(first), ctypes.c_long(last), 
-                                   ctypes.pointer(arr[0]), 
-                                   ctypes.c_ulong(size), 
-                                   ctypes.byref(validfirst),
-                                   ctypes.byref(validlast))
+    result = andor_solis.GetImages(
+        ctypes.c_long(first),
+        ctypes.c_long(last),
+        ctypes.pointer(arr[0]),
+        ctypes.c_ulong(size),
+        ctypes.byref(validfirst),
+        ctypes.byref(validlast),
+    )
     check_status(result)
     return np.ctypeslib.as_array(arr)
 
@@ -1293,11 +1376,12 @@ def GetMostRecentImage(shape):
         long integers (32-bit signed integers). The "array" must be exactly 
         the same size as the complete image."""
     andor_solis.GetMostRecentImage.restype = ctypes.c_uint
-    arr = (ctypes.c_long*shape[1]*shape[0])()
-    size = shape[0]*shape[1]
-    result = andor_solis.GetMostRecentImage(ctypes.pointer(arr[0]),
-                                            ctypes.c_ulong(size))
-    check_status(result)    
+    arr = (ctypes.c_long * shape[1] * shape[0])()
+    size = shape[0] * shape[1]
+    result = andor_solis.GetMostRecentImage(
+        ctypes.pointer(arr[0]), ctypes.c_ulong(size)
+    )
+    check_status(result)
     return np.ctypeslib.as_array(arr)
 
 @uint_winapi([ctypes.c_int])
@@ -1311,14 +1395,14 @@ def SetFanMode(mode):
         stabilize before continuing. 
         Values: fan on full (0) fan on low (1) fan off (2)"""
     return None
-    
+
+
 def GetEMGainRange():
     """ Returns the minimum and maximum values of the current selected EM 
         Gain mode and temperature of the sensor. """
     andor_solis.GetEMGainRange.restype = ctypes.c_uint
     low, high = ctypes.c_int(), ctypes.c_int()
-    result = andor_solis.GetEMGainRange(ctypes.byref(low), 
-                                        ctypes.byref(high))    
+    result = andor_solis.GetEMGainRange(ctypes.byref(low), ctypes.byref(high))
     check_status(result)
     return int(low.value), int(high.value)
 
@@ -1327,8 +1411,9 @@ def GetTemperatureRange():
         to which the detector can be cooled. """
     andor_solis.GetTemperatureRange.restype = ctypes.c_uint
     mintemp, maxtemp = ctypes.c_int(), ctypes.c_int()
-    result = andor_solis.GetTemperatureRange(ctypes.byref(mintemp),
-                                             ctypes.byref(maxtemp))
+    result = andor_solis.GetTemperatureRange(
+        ctypes.byref(mintemp), ctypes.byref(maxtemp)
+    )
     check_status(result)
     return int(mintemp.value), int(maxtemp.value)
 
@@ -1344,12 +1429,14 @@ def SetTriggerInvert(mode):
     """
     return None
 
+
 @uint_winapi([ctypes.c_int])
 def SetTemperature(temperature):
     """This function will set the desired temperature of the detector. 
         To turn the cooling ON and OFF use the CoolerON and CoolerOFF 
         function respectively."""
     return None
+
 
 def GetTemperature():
     """This function returns the temperature of the detector to the 
@@ -1361,6 +1448,7 @@ def GetTemperature():
     status = _SC[result]
     return int(temperature.value), str(status)
 
+
 def GetTemperatureF():
     """ This function returns the temperature in degrees of the detector. 
         It also gives the status of cooling process."""
@@ -1370,6 +1458,7 @@ def GetTemperatureF():
     check_status(result)
     status = _SC[result]
     return float(temperature.value), str(status)
+
 
 @uint_winapi([ctypes.c_int])
 def SetEMGainMode(mode):
@@ -1383,6 +1472,7 @@ def SetEMGainMode(mode):
         advanced EM gain, see SetEMAdvanced."""
     return None
 
+
 @uint_winapi([ctypes.c_int])
 def SetEMCCDGain(gain):
     """ Allows the user to change the gain value. The valid range for the 
@@ -1391,6 +1481,7 @@ def SetEMCCDGain(gain):
         range to work with. To access higher gain values (>x300) see 
         SetEMAdvanced. """
     return None
+
 
 def GetEMCCDGain():
     """ Returns the current gain setting. The meaning of the value returned 
@@ -1401,6 +1492,7 @@ def GetEMCCDGain():
     check_status(result)
     return int(gain.value)
 
+
 @uint_winapi([ctypes.c_int])
 def SetCoolerMode(mode):
     """ This function determines whether the cooler is switched off when 
@@ -1409,14 +1501,16 @@ def SetCoolerMode(mode):
         0 – Returns to ambient temperature on ShutDown"""
     return None
 
+
 def GetPixelSize():
     """ This function returns the dimension of the pixels in the detector 
-        in microns. """ 
+        in microns. """
     andor_solis.GetPixelSize.restype = ctypes.c_uint
     xSize, ySize = ctypes.c_float(), ctypes.c_float()
     result = andor_solis.GetPixelSize(ctypes.byref(xSize), ctypes.byref(ySize))
     check_status(result)
     return float(xSize.value), float(ySize.value)
+
 
 def GetNumberPreAmpGains():
     """ Available in some systems are a number of pre amp gains that can 
@@ -1429,6 +1523,7 @@ def GetNumberPreAmpGains():
     result = andor_solis.GetNumberPreAmpGains(ctypes.byref(noGains))
     check_status(result)
     return int(noGains.value)
+
 
 def GetPreAmpGain(index):
     """ For those systems that provide a number of pre amp gains to apply 
@@ -1443,6 +1538,7 @@ def GetPreAmpGain(index):
     check_status(result)
     return float(gain.value)
 
+
 @uint_winapi([ctypes.c_int])
 def SetPreAmpGain(index):
     """ This function will set the pre amp gain to be used for subsequent 
@@ -1452,12 +1548,14 @@ def SetPreAmpGain(index):
         function. """
     return None
 
+
 @uint_winapi([ctypes.c_int])
 def SetNumberKinetics(number):
     """ This function will set the number of scans (possibly accumulated scans) 
     to be taken during a single acquisition sequence. This will only take effect 
     if the acquisition mode is Kinetic Series."""
     return None
+
 
 @uint_winapi([ctypes.c_float])
 def SetKineticCycleTime(time):
@@ -1467,6 +1565,7 @@ def SetKineticCycleTime(time):
     further information. """
     return None
 
+
 @uint_winapi([ctypes.c_int])
 def SetNumberAccumulations(number):
     """ This function will set the number of scans accumulated in memory. This
@@ -1474,12 +1573,14 @@ def SetNumberAccumulations(number):
     Series. """
     return None
 
+
 @uint_winapi([ctypes.c_float])
 def SetAccumulationCycleTime(time):
     """ This function will set the accumulation cycle time to the nearest valid 
     value not less than the given value. The actual cycle time used is obtained 
     by GetAcquisitionTimings."""
     return None
+
 
 @uint_winapi([ctypes.c_int])
 def WaitForAcquisitionTimeOut(timeout_ms):
