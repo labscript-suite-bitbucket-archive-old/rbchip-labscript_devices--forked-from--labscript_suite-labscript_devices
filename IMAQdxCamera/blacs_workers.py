@@ -256,7 +256,7 @@ class IMAQdxCameraWorker(Worker):
         print("Setting attributes...")
         self.camera.set_attributes(self.camera_attributes)
         self.camera.set_attributes(self.manual_mode_camera_attributes)
-        print("Initialization complete")
+        print("Initialisation complete")
         self.images = None
         self.n_images = None
         self.attributes_to_save = None
